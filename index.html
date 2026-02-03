@@ -1,0 +1,1386 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Liquidación Laboral - Guatemala</title>
+  <style>
+    body{font-family:system-ui,Arial,sans-serif;margin:24px}
+    h2{margin:0 0 12px}
+    .card{border:1px solid #ddd;border-radius:12px;padding:16px;max-width:1250px}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:12px}
+    label{font-size:12px;color:#444;display:block;margin-bottom:6px}
+    input,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:14px;box-sizing:border-box}
+    button{padding:10px 14px;border:1px solid #ccc;border-radius:10px;background:#fff;cursor:pointer}
+    button:hover{background:#f6f6f6}
+    .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    .muted{color:#666;font-size:12px}
+    .panel{border:1px solid #eee;border-radius:12px;padding:12px;margin-top:14px}
+    .panel h3{margin:0 0 8px;font-size:14px}
+    table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+    th,td{border-bottom:1px solid #eee;padding:8px;text-align:right}
+    th{background:#f3f6ff;position:sticky;top:0}
+    th:first-child,td:first-child{text-align:left}
+    td input{padding:8px;border-radius:10px}
+    .warn{background:#fff7e6;border:1px solid #ffe3a3;padding:10px 12px;border-radius:10px}
+    .error{background:#ffecec;border:1px solid #ffb3b3;padding:10px 12px;border-radius:10px;display:none;margin-top:12px;white-space:pre-wrap}
+    .checkrow{display:flex;align-items:center;gap:10px;border:1px solid #eee;border-radius:12px;padding:10px 12px}
+    .checkrow input[type="checkbox"]{width:auto;transform:scale(1.1)}
+    .break h4{margin:14px 0 6px;font-size:14px}
+    .break .formula{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:12px;background:#f6f6f6;border:1px solid #eee;border-radius:10px;padding:10px;white-space:pre-wrap
+    }
+    .readonly{background:#f2f2f2 !important;color:#444;border-color:#d9d9d9;cursor:not-allowed}
+    .frozen input{background:#f2f2f2;border-color:#e2e2e2;color:#777;cursor:not-allowed}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #ddd;font-size:11px;color:#444;background:#fafafa}
+    .right{margin-left:auto}
+
+    .summaryGrid{display:grid;grid-template-columns:1fr;gap:10px}
+    .summaryBlock{border:1px solid #eee;border-radius:12px;padding:12px}
+    .summaryTitle{font-weight:700;margin:0 0 8px;font-size:13px}
+    .summaryRows{display:flex;flex-direction:column;gap:6px}
+    .summaryRow{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid #eee;border-radius:10px;background:#fafafa}
+    .summaryRow strong{font-weight:700}
+    .summaryRow.total{background:#f6fbff;border-color:#d7e9ff}
+    .summaryRow.neto{background:#ecfff1;border-color:#b7f0c6}
+    .summaryRow span:last-child{font-variant-numeric:tabular-nums}
+    .twoCol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width: 900px){ .twoCol{grid-template-columns:1fr} }
+
+    @media print{
+      body{margin:0}
+      button,.warn,.panel.print-hide,.row.print-hide{display:none !important}
+      .card{border:none;border-radius:0}
+      .panel{border:none}
+      th{position:static}
+    }
+
+    /* Tabs */
+    .tabs{display:flex;gap:8px;margin:12px 0 0;flex-wrap:wrap}
+    .tabbtn{padding:10px 14px;border:1px solid #ccc;border-radius:10px;background:#fff;cursor:pointer}
+    .tabbtn.active{background:#f3f6ff;border-color:#c7d2fe}
+    .tabpanel{display:none}
+    .tabpanel.active{display:block}
+
+    /* Tabla ISR */
+    .isrTableWrap{overflow:auto; max-height: 420px;}
+  </style>
+</head>
+
+<body>
+  <h2>Calculadora de Liquidación Laboral (Guatemala)</h2>
+
+  <div class="card" id="app">
+
+    <div class="tabs print-hide">
+      <button type="button" class="tabbtn active" data-tab="liqTab">Liquidación</button>
+      <button type="button" class="tabbtn" data-tab="isrTab">ISR (año en curso)</button>
+    </div>
+
+
+<div class="row print-hide" id="topActions">
+  <button id="pdfLiqBtn" type="button">Guardar PDF (Resumen Liquidación)</button>
+
+<span id="isrPdfWrap" style="display:none;">
+  <button id="pdfIsrBtn" type="button">Guardar PDF (Resumen ISR)</button>
+</span>
+
+  <button id="printBtn" type="button">Imprimir / Guardar PDF (offline)</button>
+  <span class="muted right">Tip: selecciona “Guardar como PDF”.</span>
+</div>
+
+    <!-- =========================
+         TAB: LIQUIDACIÓN
+         ========================= -->
+    <div id="liqTab" class="tabpanel active">
+
+      <div class="grid">
+        <div>
+          <label>Nombre</label>
+          <input id="nombre" type="text" placeholder="Nombre del colaborador" value="">
+        </div>
+
+        <div>
+          <label>Fecha de ingreso</label>
+          <input id="ingreso" type="date" value="2015-01-01">
+        </div>
+
+        <div>
+          <label>Fecha de baja</label>
+          <input id="baja" type="date" value="2026-12-31">
+        </div>
+
+        <div>
+          <label>Salario mensual (ordinario)</label>
+          <input id="salarioMensual" type="text" inputmode="decimal" placeholder="0.00" value="">
+        </div>
+
+        <div>
+          <label>Días gozados de vacaciones</label>
+          <input id="vacGozadas" type="number" step="0.01" value="0">
+        </div>
+
+        <div>
+          <label>Salario diario (auto = salario mensual / 30)</label>
+          <input id="salarioDiario" type="text" value="0.00" readonly class="readonly">
+        </div>
+
+        <div>
+          <label>HE pendientes (horas)</label>
+          <input id="hePend" type="number" step="0.01" placeholder="0.00" value="0">
+        </div>
+
+        <div>
+          <label>Otros descuentos</label>
+          <input id="otrosDesc" type="number" step="0.01" placeholder="0.00" value="0">
+        </div>
+
+        <div class="checkrow">
+          <input id="chkSueldoPend" type="checkbox" checked>
+          <div>
+            <div style="font-size:13px;"><b>Sueldo pendiente</b> <span class="tag">IGSS aplica si activo</span></div>
+            <div class="muted">Si está activo: paga los días del mes según la fecha de baja (ej. 03/04 → 3 días).</div>
+          </div>
+        </div>
+
+        <div class="checkrow">
+          <input id="chkIndem" type="checkbox" checked>
+          <div>
+            <div style="font-size:13px;"><b>Indemnización</b></div>
+            <div class="muted">Base = Promedio 6 meses (Ord+Extra) + 2/12 partes (equivale a + Prom/6).</div>
+          </div>
+        </div>
+
+        <div class="checkrow">
+          <div style="width:100%;">
+            <div style="font-size:13px;"><b>% Indemnización</b></div>
+            <div class="muted">Multiplica el monto final (100% = normal).</div>
+            <div style="margin-top:8px;">
+              <input id="indemPct" type="number" step="0.01" value="100" min="0" max="300">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row print-hide">
+        <button id="recalcBtn" type="button">Recalcular</button>
+        <button id="clearEditableBtn" type="button">Borrar datos (meses editables)</button>
+        <button id="csvBtn" type="button">Descargar CSV (12 meses)</button>
+        <button id="xlsxBtn" type="button">Exportar Excel</button>
+      
+        <span class="muted right">Redondeo: solo al final (2 decimales).</span>
+      </div>
+
+      <div id="errBox" class="error"></div>
+
+      <div class="panel">
+        <h3>Ingresos últimos 12 meses completos (editable)</h3>
+        <div class="muted">(Se arma desde el mes anterior a la baja hacia atrás)</div>
+        <div style="overflow:auto; max-height: 420px;">
+          <table id="tabla12">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th>Ordinario</th>
+                <th>Extraordinario</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Resumen</h3>
+        <div class="twoCol">
+          <div class="summaryBlock">
+            <div class="summaryTitle">INGRESOS</div>
+            <div class="summaryRows" id="ingresosRows"></div>
+          </div>
+          <div class="summaryBlock">
+            <div class="summaryTitle">DESCUENTOS</div>
+            <div class="summaryRows" id="descuentosRows"></div>
+          </div>
+        </div>
+
+        <div class="summaryGrid" style="margin-top:10px;">
+          <div class="summaryRow neto">
+            <strong>NETO</strong>
+            <span id="netoVal">Q 0.00</span>
+          </div>
+        </div>
+
+        <div class="warn muted print-hide" style="margin-top:10px;">
+          IGSS (4.83%): solo si hay sueldo u horas extra pendientes.<br>
+          HE pendientes: (Salario mensual/30/8) * 1.5 * horas.
+        </div>
+      </div>
+
+      <div class="panel print-hide">
+        <h3>Detalle de cálculo</h3>
+        <div id="breakdowns" class="break"></div>
+      </div>
+
+    </div><!-- /liqTab -->
+
+    <!-- =========================
+         TAB: ISR
+         ========================= -->
+    <div id="isrTab" class="tabpanel">
+
+      <div class="panel">
+        <h3>ISR – Ingresos del año en curso (anclado a la fecha de baja)</h3>
+        <div class="muted">Meses de enero a mes de baja (editable). Bono incentivo por default: Q 250.00</div>
+
+        <div class="isrTableWrap">
+          <table id="tablaISR">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th>Salario</th>
+                <th>Bono incentivo</th>
+                <th>Horas Extra</th>
+                <th>Otros</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <tr>
+                <th style="text-align:left">TOTAL</th>
+                <th id="isrTotSal">0</th>
+                <th id="isrTotBon">0</th>
+                <th id="isrTotHE">0</th>
+                <th id="isrTotOtr">0</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Ingresos adicionales</h3>
+
+        <div class="grid" style="grid-template-columns:repeat(4,minmax(190px,1fr));">
+          <div>
+            <label>Aguinaldo (editable)</label>
+            <input id="isrAgu" type="text" inputmode="decimal" value="0">
+          </div>
+          <div>
+            <label>Aguinaldo liquidación (auto)</label>
+            <input id="isrAguLiq" type="text" class="readonly" readonly value="0">
+          </div>
+          <div>
+            <label>Bono 14 (editable)</label>
+            <input id="isrB14" type="text" inputmode="decimal" value="0">
+          </div>
+          <div>
+            <label>Bono 14 liquidación (auto)</label>
+            <input id="isrB14Liq" type="text" class="readonly" readonly value="0">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="right" style="text-align:right;">
+            <div class="muted">Subtotal de ingresos (ISR)</div>
+            <div style="font-size:18px;font-weight:800;" id="isrIngTotal">Q 0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px;">
+        <h3>Deducibles</h3>
+
+        <div class="summaryRows">
+          <!-- ✅ ÚNICO IGSS: aquí -->
+          <div class="summaryRow">
+            <span>IGSS (ISR)</span>
+            <span id="isrIGSSVal">Q 0.00</span>
+          </div>
+
+          <div class="summaryRow">
+            <span>Aguinaldo (total)</span>
+            <span id="isrDedAgu">Q 0.00</span>
+          </div>
+
+          <div class="summaryRow">
+            <span>Bono 14 (total)</span>
+            <span id="isrDedB14">Q 0.00</span>
+          </div>
+
+          <div class="summaryRow">
+            <span>Deducible fijo</span>
+            <span id="isrDedLey">Q 48,000.00</span>
+          </div>
+
+          <div class="summaryRow total">
+            <strong>Total deducibles</strong>
+            <span id="isrDedTotal">Q 0.00</span>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="right" style="text-align:right;">
+            <div class="muted">Renta Neta</div>
+            <div style="font-size:18px;font-weight:800;" id="isrRentaNeta">Q 0.00</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="right" style="text-align:right;">
+            <div class="muted">Impuesto Determinado</div>
+            <div style="font-size:18px;font-weight:800;" id="isrImpDet">Q 0.00</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px; align-items:flex-end;">
+          <div class="checkrow" style="flex:1;">
+            <input id="chkRetenido" type="checkbox">
+            <div style="width:100%;">
+              <div style="font-size:13px;"><b>Ingresar total retenido en el año</b></div>
+              <div class="muted">Habilita el campo para comparar vs Impuesto Determinado.</div>
+              <div style="margin-top:8px;">
+                <input id="isrRetenido" type="text" inputmode="decimal" class="readonly" readonly value="0">
+              </div>
+            </div>
+          </div>
+
+          <div class="right" style="min-width:260px;text-align:right;">
+            <div class="muted" id="isrDiffLabel">Diferencia</div>
+            <div style="font-size:18px;font-weight:800;" id="isrDiffVal">Q 0.00</div>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:10px;">
+          
+        </div>
+      </div>
+
+    </div><!-- /isrTab -->
+
+  </div><!-- /app -->
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+
+  function toggleISRPdfButton(){
+    const isrTabActive = document.getElementById("isrTab").classList.contains("active");
+    const wrap = $("isrPdfWrap");
+    if(wrap) wrap.style.display = isrTabActive ? "" : "none";
+}
+    window.onerror = function(message, source, lineno, colno, error) {
+      const box = $("errBox");
+      box.style.display = "block";
+      box.textContent =
+        "Error JS:\n" +
+        String(message) + "\n" +
+        "Archivo: " + String(source || "") + "\n" +
+        "Línea: " + lineno + " Col: " + colno + "\n" +
+        (error && error.stack ? ("\n" + error.stack) : "");
+      return false;
+    };
+
+    const fmt = (n) => new Intl.NumberFormat('es-GT', { style:'currency', currency:'GTQ' }).format(n);
+    const r2  = (x) => Math.round((Number(x) + Number.EPSILON) * 100) / 100;
+
+    const fmtNum = (n, dec=2) =>
+      new Intl.NumberFormat('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n);
+
+    const parseNumLoose = (s) => {
+      const cleaned = String(s ?? "").replace(/,/g, "").trim();
+      const x = parseFloat(cleaned);
+      return Number.isFinite(x) ? x : 0;
+    };
+    const num = (v) => parseNumLoose(v);
+
+    const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+    function showError(msg){
+      const box = $("errBox");
+      if(!msg){ box.style.display="none"; box.textContent=""; return; }
+      box.style.display="block";
+      box.textContent = msg;
+    }
+
+    function parseDate(id){
+      const v = $(id).value;
+      if(!v) return null;
+      const d = new Date(v + "T00:00:00");
+      return isNaN(d) ? null : d;
+    }
+
+    function daysBetweenInclusive(a,b){
+      const ms = 24*60*60*1000;
+      const start = new Date(a.getFullYear(),a.getMonth(),a.getDate());
+      const end   = new Date(b.getFullYear(),b.getMonth(),b.getDate());
+      return Math.floor((end-start)/ms) + 1;
+    }
+
+    function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+    function endOfPrevMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 0); }
+    function addMonths(d, m){ return new Date(d.getFullYear(), d.getMonth()+m, 1); }
+    function monthKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+    function monthLabel(d){ return `${MONTHS_ES[d.getMonth()]} ${d.getFullYear()}`; }
+
+    let meses = [];
+
+    function recalcSalarioDiario(){
+      const sm = num($("salarioMensual").value);
+      const sd = sm / 30;
+      $("salarioDiario").value = fmtNum(r2(sd), 2);
+      return sd;
+    }
+
+    function buildMonthsList(){
+      const baja = parseDate("baja");
+      if(!baja) return;
+
+      const lastComplete = endOfPrevMonth(baja);
+      const firstDayLastComplete = startOfMonth(lastComplete);
+
+      meses = [];
+      for(let i=0;i<12;i++){
+        const mDate = addMonths(firstDayLastComplete, -i);
+        meses.push({ date: mDate, ord: 0, extra: 0 });
+      }
+    }
+
+    function setMoneyInputBehavior(el, onParsed){
+      if(!el) return;
+
+      el.addEventListener("focus", ()=>{
+        const v = el.value;
+        if(v) el.value = String(v).replace(/,/g,"");
+      });
+
+      if(onParsed){
+        el.addEventListener("input", ()=>{
+          onParsed(num(el.value));
+        });
+      }
+
+      el.addEventListener("blur", ()=>{
+        const v = num(el.value);
+        el.value = fmtNum(r2(v), 2);
+        if(onParsed) onParsed(v);
+      });
+    }
+
+    function renderMonthsTable(){
+      const tbody = document.querySelector("#tabla12 tbody");
+      tbody.innerHTML = "";
+
+      const ingreso = parseDate("ingreso");
+      const ingresoMonthStart = ingreso ? startOfMonth(ingreso) : null;
+
+      meses.forEach((m, idx)=>{
+        const tr = document.createElement("tr");
+
+        const tdMes = document.createElement("td");
+        tdMes.textContent = monthLabel(m.date);
+
+        const ordIn = document.createElement("input");
+        ordIn.type="text"; ordIn.inputMode="decimal";
+        ordIn.value = fmtNum(r2(m.ord), 2);
+
+        const exIn = document.createElement("input");
+        exIn.type="text"; exIn.inputMode="decimal";
+        exIn.value = fmtNum(r2(m.extra), 2);
+
+        const frozen = ingresoMonthStart && m.date < ingresoMonthStart;
+
+        if(frozen){
+          if(meses[idx].ord !== 0 || meses[idx].extra !== 0){
+            meses[idx].ord = 0;
+            meses[idx].extra = 0;
+            ordIn.value = fmtNum(0,2);
+            exIn.value = fmtNum(0,2);
+          }
+          tr.classList.add("frozen");
+          ordIn.disabled = true;
+          exIn.disabled = true;
+        } else {
+          setMoneyInputBehavior(ordIn, (v)=>{ meses[idx].ord = v; renderAll(); });
+          setMoneyInputBehavior(exIn,  (v)=>{ meses[idx].extra = v; renderAll(); });
+        }
+
+        const tdOrd = document.createElement("td"); tdOrd.appendChild(ordIn);
+        const tdEx  = document.createElement("td"); tdEx.appendChild(exIn);
+
+        tr.appendChild(tdMes);
+        tr.appendChild(tdOrd);
+        tr.appendChild(tdEx);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function mesesMap(){
+      const map = new Map();
+      for(const it of meses) map.set(monthKey(it.date), it);
+      return map;
+    }
+
+    function monthSeq(startDate, endDate){
+      const out = [];
+      const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      while(cur <= end){
+        out.push(new Date(cur.getFullYear(), cur.getMonth(), 1));
+        cur.setMonth(cur.getMonth()+1);
+      }
+      return out;
+    }
+
+    function availableCompleteMonths(){
+      const ingreso = parseDate("ingreso");
+      const baja = parseDate("baja");
+      if(!ingreso || !baja) return [];
+
+      const valid = [];
+      for(const it of meses){
+        const monthStart = it.date;
+        const monthEnd = endOfPrevMonth(addMonths(it.date, 1));
+        if(ingreso <= monthStart && baja >= monthEnd) valid.push(it);
+      }
+      return valid;
+    }
+
+    function calc(){
+      const ingreso = parseDate("ingreso");
+      const baja = parseDate("baja");
+      if(!ingreso || !baja){
+        showError("Faltan fechas o son inválidas. Usa el selector (calendario).");
+        return null;
+      }
+      if(baja < ingreso){
+        showError("La fecha de baja no puede ser menor que la fecha de ingreso.");
+        return null;
+      }
+      showError("");
+
+      const salarioMensual = num($("salarioMensual").value);
+      const salarioDiario = salarioMensual / 30;
+      $("salarioDiario").value = fmtNum(r2(salarioDiario), 2);
+
+      const vacGozadas = num($("vacGozadas").value);
+      const chkIndem = $("chkIndem").checked;
+      const chkSueldoPend = $("chkSueldoPend").checked;
+
+      const heHoras = num($("hePend").value);
+      const otrosDesc = num($("otrosDesc").value);
+
+      const diasServicio = daysBetweenInclusive(ingreso, baja);
+
+      const startAgu = new Date(baja.getFullYear(), 11, 1);
+      const startAguReal = (baja >= startAgu) ? startAgu : new Date(baja.getFullYear()-1, 11, 1);
+
+      const startB14 = new Date(baja.getFullYear(), 6, 1);
+      const startB14Real = (baja >= startB14) ? startB14 : new Date(baja.getFullYear()-1, 6, 1);
+
+      const map = mesesMap();
+
+      function breakdownPeriodo(startReal, bajaDate){
+        const seq = monthSeq(startReal, bajaDate);
+        const bajaKey = monthKey(bajaDate);
+
+        const diasMesBaja = new Date(bajaDate.getFullYear(), bajaDate.getMonth() + 1, 0).getDate();
+        const diasTrab = bajaDate.getDate();
+        const bajaParcial = (salarioMensual / diasMesBaja) * diasTrab;
+
+        const lines = [];
+        let sum = 0;
+
+        for(const m of seq){
+          const k = monthKey(m);
+          if(k === bajaKey){
+            lines.push({ label: `${monthLabel(m)} (parcial ${diasTrab} día(s))`, value: bajaParcial });
+            sum += bajaParcial;
+          } else {
+            const it = map.get(k);
+            const v = it ? num(it.ord) : 0;
+            lines.push({ label: monthLabel(m), value: v });
+            sum += v;
+          }
+        }
+        return { lines, sum };
+      }
+
+      const agu = breakdownPeriodo(startAguReal, baja);
+      const aguinaldo = r2(agu.sum / 12);
+
+      const b14 = breakdownPeriodo(startB14Real, baja);
+      const bono14 = r2(b14.sum / 12);
+
+      const diasVacGeneradas = (diasServicio / 365) * 15;
+      const diasVacPend = Math.max(0, diasVacGeneradas - vacGozadas);
+
+      const valid = availableCompleteMonths();
+      const mesesCompletos = valid.length;
+
+      const vacLines = valid.map(it => ({
+        label: monthLabel(it.date),
+        ord: num(it.ord),
+        extra: num(it.extra),
+        value: num(it.ord) + num(it.extra)
+      }));
+
+      const sumVacBase = vacLines.reduce((acc,x)=>acc + x.value, 0);
+      const promMensual = mesesCompletos > 0 ? (sumVacBase / mesesCompletos) : 0;
+      const vacPago = r2((promMensual / 30) * diasVacPend);
+
+      const last6 = valid.slice(0, 6);
+      const indemLines = last6.map(it => ({
+        label: monthLabel(it.date),
+        ord: num(it.ord),
+        extra: num(it.extra),
+        value: num(it.ord) + num(it.extra)
+      }));
+      const indemSumBase = indemLines.reduce((acc,x)=>acc + x.value, 0);
+      const prom6 = indemLines.length > 0 ? (indemSumBase / indemLines.length) : 0;
+      const indemBase = prom6 + (prom6 / 6);
+
+      const indemPct = Math.max(0, num($("indemPct").value || 100));
+      const indemFactor = indemPct / 100;
+
+      const indemnizacion = chkIndem ? r2(indemBase * (diasServicio / 365) * indemFactor) : 0;
+
+      const diasPend = chkSueldoPend ? baja.getDate() : 0;
+      const diasMesBaja = new Date(baja.getFullYear(), baja.getMonth()+1, 0).getDate();
+      const sueldoPendBruto = chkSueldoPend ? (salarioMensual / diasMesBaja) * diasPend : 0;
+      const sueldoPend = r2(sueldoPendBruto);
+
+      const heRate = (salarioMensual / 30 / 8) * 1.5;
+      const hePago = r2(heRate * heHoras);
+
+      const igssBase = chkSueldoPend ? (sueldoPend + hePago) : 0;
+      const igss = chkSueldoPend ? r2(igssBase * 0.0483) : 0;
+
+      const ingresosSubtotal = r2(aguinaldo + bono14 + vacPago + indemnizacion + sueldoPend + hePago);
+      const descuentosSubtotal = r2(igss + r2(otrosDesc));
+      const neto = r2(ingresosSubtotal - descuentosSubtotal);
+
+      return {
+        salarioMensual, salarioDiario,
+        ingreso, baja,
+        diasServicio,
+        agu, aguinaldo,
+        b14, bono14,
+        vacLines, sumVacBase, promMensual, diasVacGeneradas, diasVacPend, vacPago, mesesCompletos,
+        chkIndem, indemLines, indemSumBase, prom6, indemBase, indemnizacion,
+        indemPct, indemFactor,
+        chkSueldoPend, diasPend, sueldoPend,
+        heHoras, heRate, hePago,
+        igssBase, igss,
+        otrosDesc: r2(otrosDesc),
+        ingresosSubtotal, descuentosSubtotal, neto
+      };
+    }
+
+    function rowHTML(label, value, cls=""){
+      return `<div class="summaryRow ${cls}">
+        <span>${label}</span>
+        <span>${fmt(value)}</span>
+      </div>`;
+    }
+
+    function renderSummary(r){
+      $("ingresosRows").innerHTML = [
+        rowHTML("Aguinaldo", r.aguinaldo),
+        rowHTML("Bono 14", r.bono14),
+        rowHTML("Vacaciones", r.vacPago),
+        rowHTML("Indemnización", r.indemnizacion),
+        rowHTML("Sueldo pendiente", r.sueldoPend),
+        rowHTML("HE pendiente", r.hePago),
+        rowHTML("SUBTOTAL", r.ingresosSubtotal, "total"),
+      ].join("");
+
+      $("descuentosRows").innerHTML = [
+        rowHTML("IGSS", r.igss),
+        rowHTML("Otros", r.otrosDesc),
+        rowHTML("SUBTOTAL", r.descuentosSubtotal, "total"),
+      ].join("");
+
+      $("netoVal").textContent = fmt(r.neto);
+    }
+
+    function linesTableSimple(lines){
+      const rows = lines.map(x =>
+        `<tr><td style="text-align:left">${x.label}</td><td>${fmt(r2(x.value))}</td></tr>`
+      ).join("");
+      return `<table>
+        <thead><tr><th style="text-align:left">Mes</th><th>Valor</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    function linesTableOrdExtra(lines, emptyMsg){
+      const rows = (lines || []).map(x => `
+        <tr>
+          <td style="text-align:left">${x.label}</td>
+          <td>${fmt(r2(x.ord || 0))}</td>
+          <td>${fmt(r2(x.extra || 0))}</td>
+          <td>${fmt(r2(x.value || 0))}</td>
+        </tr>
+      `).join("");
+
+      return `<table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Mes</th>
+            <th>Ordinario</th>
+            <th>Extra</th>
+            <th>Ord+Extra</th>
+          </tr>
+        </thead>
+        <tbody>${rows || `<tr><td style="text-align:left" colspan="4">${emptyMsg}</td></tr>`}</tbody>
+      </table>`;
+    }
+
+    function renderBreakdowns(r){
+      const d = $("breakdowns");
+
+      const aguHtml = `
+        <h4>Aguinaldo</h4>
+        ${linesTableSimple(r.agu.lines)}
+        <div class="formula">Total ordinarios del período = ${fmt(r2(r.agu.sum))}
+Aguinaldo = Total / 12
+Aguinaldo = ${fmt(r2(r.agu.sum))} / 12 = ${fmt(r.aguinaldo)}</div>
+      `;
+
+      const b14Html = `
+        <h4>Bono 14</h4>
+        ${linesTableSimple(r.b14.lines)}
+        <div class="formula">Total ordinarios del período = ${fmt(r2(r.b14.sum))}
+Bono 14 = Total / 12
+Bono 14 = ${fmt(r2(r.b14.sum))} / 12 = ${fmt(r.bono14)}</div>
+      `;
+
+      const vacHtml = `
+        <h4>Vacaciones</h4>
+        ${linesTableOrdExtra(r.vacLines, "No hay meses completos disponibles según ingreso/baja.")}
+        <div class="formula">Base = Σ(Ord+Extra) = ${fmt(r2(r.sumVacBase))}
+Meses completos usados = ${r.mesesCompletos}
+Promedio mensual = Base / Meses = ${fmt(r2(r.promMensual))}
+
+Días pendientes = ${r2(r.diasVacPend).toFixed(2)}
+Vacaciones = (Promedio mensual / 30) * Días pendientes
+Vacaciones = (${fmt(r2(r.promMensual))} / 30) * ${r2(r.diasVacPend).toFixed(2)} = ${fmt(r.vacPago)}</div>
+      `;
+
+      const indemHtml = `
+        <h4>Indemnización</h4>
+        ${linesTableOrdExtra(r.indemLines, "No hay meses completos suficientes (se toma hasta 6 meses).")}
+        <div class="formula">Indemnización activa: ${r.chkIndem ? "Sí" : "No"}
+% Indemnización: ${r2(r.indemPct).toFixed(2)}% (factor ${r2(r.indemFactor).toFixed(4)})
+
+Base (6 meses) = Σ(Ord+Extra) = ${fmt(r2(r.indemSumBase))}
+Meses usados = ${(r.indemLines || []).length}
+Promedio 6 meses = Base / Meses = ${fmt(r2(r.prom6))}
+
+Base (+2/12) = Prom6 + Prom6/6 = ${fmt(r2(r.indemBase))}
+Indemnización = Base * (Días servicio / 365) * Factor
+Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.indemFactor).toFixed(4)} = ${fmt(r.indemnizacion)}</div>
+      `;
+
+      d.innerHTML = aguHtml + b14Html + vacHtml + indemHtml;
+    }
+
+    function renderAll(){
+      const r = calc();
+      if(!r) return;
+      renderSummary(r);
+      renderBreakdowns(r);
+      renderISR();
+    }
+
+    function clearEditableMonths(){
+      const ingreso = parseDate("ingreso");
+      const ingresoMonthStart = ingreso ? startOfMonth(ingreso) : null;
+
+      meses = meses.map(it=>{
+        const frozen = ingresoMonthStart && it.date < ingresoMonthStart;
+        if(!frozen) return { ...it, ord: 0, extra: 0 };
+        return it;
+      });
+      renderMonthsTable();
+      renderAll();
+    }
+
+    function downloadCSV(){
+      const headers = ["Mes","Ordinario","Extra"];
+      const lines = [headers.join(",")];
+      for(const it of meses){
+        lines.push([monthLabel(it.date), r2(num(it.ord)).toFixed(2), r2(num(it.extra)).toFixed(2)].join(","));
+      }
+      const blob = new Blob([lines.join("\n")], { type:"text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "liquidacion_12_meses.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportExcel(){
+      const r = calc();
+      if(!r) return;
+
+      if(!window.XLSX){
+        showError("No se cargó XLSX (posible bloqueo de internet). Puedes usar CSV por ahora.");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const resumen = [
+        ["Nombre", $("nombre").value],
+        ["Ingreso", $("ingreso").value],
+        ["Baja", $("baja").value],
+        ["Salario mensual", r2(r.salarioMensual)],
+        ["Salario diario", r2(r.salarioDiario)],
+        ["Días servicio", r.diasServicio],
+        ["INGRESOS - Aguinaldo", r.aguinaldo],
+        ["INGRESOS - Bono 14", r.bono14],
+        ["INGRESOS - Vacaciones", r.vacPago],
+        ["INGRESOS - Indemnización", r.indemnizacion],
+        ["INGRESOS SUBTOTAL", r.ingresosSubtotal],
+        ["DESCUENTOS - IGSS", r.igss],
+        ["DESCUENTOS - Otros", r.otrosDesc],
+        ["DESCUENTOS SUBTOTAL", r.descuentosSubtotal],
+        ["NETO", r.neto],
+      ];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), "Resumen");
+      XLSX.writeFile(wb, `Liquidacion_${($("nombre").value||"colaborador").replaceAll(" ","_")}.xlsx`);
+    }
+
+    function exportPDFOffline(){ window.print(); }
+
+function pdfText(doc, text, x, y, maxWidth){
+  const lines = doc.splitTextToSize(String(text ?? ""), maxWidth);
+  doc.text(lines, x, y);
+  return y + (lines.length * 6);
+}
+
+function savePDFResumenLiquidacion(){
+  const r = calc();
+  if(!r) return;
+
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    showError("No se cargó jsPDF. Revisa internet o bloqueo del CDN.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:"mm", format:"a4" });
+
+  const margin = 14;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const maxW = pageW - margin*2;
+
+  let y = 16;
+
+  // Header
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(14);
+  doc.text("Resumen de Liquidación (Guatemala)", margin, y); y += 8;
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  doc.text(`Nombre: ${$("nombre").value || "-"}`, margin, y); y += 6;
+  doc.text(`Ingreso: ${$("ingreso").value || "-"}`, margin, y); y += 6;
+  doc.text(`Baja: ${$("baja").value || "-"}`, margin, y); y += 6;
+  doc.text(`Salario mensual: ${fmt(r2(r.salarioMensual))}`, margin, y); y += 6;
+  doc.text(`Salario diario: ${fmt(r2(r.salarioDiario))}`, margin, y); y += 6;
+  doc.text(`Días de servicio: ${r.diasServicio}`, margin, y); y += 8;
+
+  // 2 columnas
+  const gap = 8;
+  const colW = (maxW - gap) / 2;
+  const xL = margin;
+  const xR = margin + colW + gap;
+
+  const titleH = 6;
+  const lineH = 6;
+
+  const addColumn = (x, yStart, title, items) => {
+    let yy = yStart;
+
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(11);
+    doc.text(title, x, yy); yy += titleH;
+
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(10);
+
+    items.forEach(([k,v, isTotal])=>{
+      const label = String(k);
+      const val = fmt(r2(v));
+
+      // etiqueta
+      doc.setFont("helvetica", isTotal ? "bold" : "normal");
+      doc.text(label, x, yy);
+
+      // valor alineado a derecha dentro de la columna
+      const valX = x + colW;
+      doc.text(val, valX, yy, { align:"right" });
+
+      yy += lineH;
+    });
+
+    return yy;
+  };
+
+  const ingresos = [
+    ["Aguinaldo", r.aguinaldo, false],
+    ["Bono 14", r.bono14, false],
+    ["Vacaciones", r.vacPago, false],
+    ["Indemnización", r.indemnizacion, false],
+    ["Sueldo pendiente", r.sueldoPend, false],
+    ["HE pendiente", r.hePago, false],
+    ["SUBTOTAL", r.ingresosSubtotal, true],
+  ];
+
+  const descuentos = [
+    ["IGSS", r.igss, false],
+    ["Otros", r.otrosDesc, false],
+    ["SUBTOTAL", r.descuentosSubtotal, true],
+  ];
+
+  const yEndL = addColumn(xL, y, "INGRESOS", ingresos);
+  const yEndR = addColumn(xR, y, "DESCUENTOS", descuentos);
+
+  // NETO debajo (centrado y destacado)
+  const yAfterCols = Math.max(yEndL, yEndR) + 6;
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(13);
+  doc.text(`NETO: ${fmt(r2(r.neto))}`, margin, yAfterCols);
+
+  // Firma / Fecha (al pie)
+  const yFooter = pageH - 22;
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+
+const nombreFirma = $("nombre").value || "______________________";
+
+doc.line(margin, yFooter, margin + 70, yFooter);
+doc.text(nombreFirma, margin, yFooter + 5);
+
+
+  const hoy = new Date();
+  const fecha = hoy.toLocaleDateString("es-GT", { year:"numeric", month:"2-digit", day:"2-digit" });
+  doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
+
+  const filename = `Resumen_Liquidacion_${($("nombre").value||"colaborador").replaceAll(" ","_")}.pdf`;
+  doc.save(filename);
+}
+
+function savePDFResumenISR(){
+  const liq = calc();
+  if(!liq) return;
+
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    showError("No se cargó jsPDF. Revisa que tengas internet o que no esté bloqueado el CDN.");
+    return;
+  }
+
+  const r = calcISR(liq);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:"mm", format:"a4" });
+
+  const margin = 14;
+  const pageW = doc.internal.pageSize.getWidth();
+  const maxW = pageW - margin*2;
+
+  let y = 16;
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(14);
+  doc.text("Resumen ISR (año en curso) - Guatemala", margin, y); y += 8;
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+
+  y = pdfText(doc, `Nombre: ${$("nombre").value || "-"}`, margin, y, maxW);
+  y = pdfText(doc, `Baja (ancla): ${$("baja").value || "-"}`, margin, y, maxW);
+
+  y += 4;
+  doc.setFont("helvetica","bold");
+  doc.text("INGRESOS (ISR)", margin, y); y += 6;
+  doc.setFont("helvetica","normal");
+
+  const ingresosISR = [
+    ["Total salarios", r.totSal],
+    ["Total bono incentivo", r.totBon],
+    ["Total horas extra", r.totHE],
+    ["Total otros", r.totOtr],
+    ["Aguinaldo (editable)", r.aguEdit],
+    ["Aguinaldo (liquidación)", r.aguLiq],
+    ["Bono 14 (editable)", r.b14Edit],
+    ["Bono 14 (liquidación)", r.b14Liq],
+    ["SUBTOTAL INGRESOS", r.ingresos],
+  ];
+
+  ingresosISR.forEach(([k,v])=>{
+    y = pdfText(doc, `${k}: ${fmt(r2(v))}`, margin, y, maxW);
+  });
+
+  y += 4;
+  doc.setFont("helvetica","bold");
+  doc.text("DEDUCIBLES", margin, y); y += 6;
+  doc.setFont("helvetica","normal");
+
+  const ded = [
+    ["IGSS (ISR)", r.igssISR],
+    ["Aguinaldo (total)", r.dedAgu],
+    ["Bono 14 (total)", r.dedB14],
+    ["Deducible fijo", r.dedFijo],
+    ["TOTAL DEDUCIBLES", r.deducibles],
+  ];
+
+  ded.forEach(([k,v])=>{
+    y = pdfText(doc, `${k}: ${fmt(r2(v))}`, margin, y, maxW);
+  });
+
+  y += 6;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  y = pdfText(doc, `Renta Neta: ${fmt(r2(r.rentaNeta))}`, margin, y, maxW);
+  y = pdfText(doc, `Impuesto Determinado: ${fmt(r2(r.impDet))}`, margin, y, maxW);
+
+  if(r.useRet){
+    y += 2;
+    doc.setFont("helvetica","normal");
+    y = pdfText(doc, `Retenido en el año: ${fmt(r2(r.retenido))}`, margin, y, maxW);
+    doc.setFont("helvetica","bold");
+    y = pdfText(doc, `${r.diffLabel}: ${fmt(r2(r.diffShow))}`, margin, y, maxW);
+  }
+
+  const filename = `Resumen_ISR_${($("nombre").value||"colaborador").replaceAll(" ","_")}.pdf`;
+  // Firma / Fecha (al pie)
+
+const pageH = doc.internal.pageSize.getHeight();
+
+const yFooter = pageH - 22;
+doc.setFont("helvetica","normal");
+doc.setFontSize(10);
+
+const nombreFirma = $("nombre").value || "______________________";
+
+doc.line(margin, yFooter, margin + 70, yFooter);
+doc.text(nombreFirma, margin, yFooter + 5);
+
+
+const hoy = new Date();
+const fecha = hoy.toLocaleDateString("es-GT", { year:"numeric", month:"2-digit", day:"2-digit" });
+doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
+
+  doc.save(filename);
+}
+
+
+
+    function autofillMesesDesdeSalario(){
+      const ingreso = parseDate("ingreso");
+      const ingresoMonthStart = ingreso ? startOfMonth(ingreso) : null;
+
+      const sm = num($("salarioMensual").value);
+      if(sm <= 0) return;
+
+      meses = meses.map(it => {
+        const frozen = ingresoMonthStart && it.date < ingresoMonthStart;
+        if(frozen) return { ...it, ord: 0, extra: 0 };
+
+        const ord = num(it.ord);
+        const extra = num(it.extra);
+
+        return {
+          ...it,
+          ord: (ord === 0 ? sm : ord),
+          extra: extra
+        };
+      });
+    }
+
+    // =====================
+    // ISR (Año en curso)
+    // =====================
+    let isrMeses = [];
+
+    function buildISRMonthsList(){
+      const baja = parseDate("baja");
+      if(!baja) return;
+
+      const y = baja.getFullYear();
+      const endM = baja.getMonth();
+
+      isrMeses = [];
+      for(let m=0; m<=endM; m++){
+        isrMeses.push({
+          date: new Date(y, m, 1),
+          salario: 0,
+          bono: 250,
+          he: 0,
+          otros: 0
+        });
+      }
+    }
+
+    function autofillISRDesdeDatos(){
+      const sm = num($("salarioMensual").value);
+      const baja = parseDate("baja");
+      if(sm <= 0 || !baja) return;
+
+      const m12 = mesesMap();
+      const bajaKey = monthKey(baja);
+
+      isrMeses = isrMeses.map(it=>{
+        const k = monthKey(it.date);
+        const from12 = m12.get(k);
+        let baseSal = from12 ? num(from12.ord) : sm;
+
+        if(k === bajaKey){
+          const diasMes = new Date(baja.getFullYear(), baja.getMonth()+1, 0).getDate();
+          const diasTrab = baja.getDate();
+          baseSal = (sm / diasMes) * diasTrab;
+        }
+
+        return {
+          ...it,
+          salario: (num(it.salario) === 0 ? baseSal : num(it.salario)),
+          bono: (num(it.bono) === 0 ? 250 : num(it.bono)),
+          he: num(it.he),
+          otros: num(it.otros),
+        };
+      });
+    }
+
+    function renderISRTable(){
+      const tbody = document.querySelector("#tablaISR tbody");
+      if(!tbody) return;
+      tbody.innerHTML = "";
+
+      isrMeses.forEach((m, idx)=>{
+        const tr = document.createElement("tr");
+
+        const tdMes = document.createElement("td");
+        tdMes.style.textAlign = "left";
+        tdMes.textContent = monthLabel(m.date);
+
+        const mkCell = (field) => {
+          const td = document.createElement("td");
+          const inp = document.createElement("input");
+          inp.type = "text";
+          inp.inputMode = "decimal";
+          inp.value = fmtNum(r2(num(m[field])), 2);
+          setMoneyInputBehavior(inp, (v)=>{
+            isrMeses[idx][field] = v;
+            renderISR();
+          });
+          td.appendChild(inp);
+          return td;
+        };
+
+        tr.appendChild(tdMes);
+        tr.appendChild(mkCell("salario"));
+        tr.appendChild(mkCell("bono"));
+        tr.appendChild(mkCell("he"));
+        tr.appendChild(mkCell("otros"));
+        tbody.appendChild(tr);
+      });
+    }
+
+    function calcISR(liq){
+      const totSal = isrMeses.reduce((a,x)=>a + num(x.salario), 0);
+      const totBon = isrMeses.reduce((a,x)=>a + num(x.bono), 0);
+      const totHE  = isrMeses.reduce((a,x)=>a + num(x.he), 0);
+      const totOtr = isrMeses.reduce((a,x)=>a + num(x.otros), 0);
+
+      const aguEdit = num($("isrAgu").value);
+      const b14Edit = num($("isrB14").value);
+
+      const aguLiq = liq ? num(liq.aguinaldo) : 0;
+      const b14Liq = liq ? num(liq.bono14) : 0;
+
+      const igssISR = r2(totSal * 0.0483);
+
+      const ingresos = r2(totSal + totBon + totHE + totOtr + aguEdit + aguLiq + b14Edit + b14Liq);
+
+      const dedAgu = r2(aguEdit + aguLiq);
+      const dedB14 = r2(b14Edit + b14Liq);
+      const dedFijo = 48000;
+      const deducibles = r2(igssISR + dedAgu + dedB14 + dedFijo);
+
+      const rentaNeta = r2(ingresos - deducibles);
+
+      let impDet = 0;
+      
+      if (rentaNeta < 0){
+	impDet = 0;
+	} else {
+
+      if (rentaNeta > 300000){
+        impDet = r2((rentaNeta - 300000) * 0.07 + 15000);
+      } else {
+        impDet = r2(rentaNeta * 0.05);
+      }
+      }
+
+      const useRet = $("chkRetenido").checked;
+      const retenido = useRet ? num($("isrRetenido").value) : 0;
+      const diff = r2(retenido - impDet);
+
+      let diffLabel = "Diferencia";
+      let diffShow = 0;
+
+      if(useRet){
+        if(diff > 0){
+          diffLabel = "Impuesto a Devolver";
+          diffShow = diff;
+        } else if(diff < 0){
+          diffLabel = "Impuesto por Retener";
+          diffShow = Math.abs(diff);
+        } else {
+          diffLabel = "Impuesto igual a retención";
+          diffShow = 0;
+        }
+      }
+
+      return {
+        totSal, totBon, totHE, totOtr,
+        aguEdit, b14Edit, aguLiq, b14Liq,
+        igssISR, ingresos,
+        dedAgu, dedB14, dedFijo, deducibles,
+        rentaNeta, impDet,
+        useRet, retenido, diffLabel, diffShow
+      };
+    }
+
+    function renderISR(){
+      const liq = calc();
+      if(!liq) return;
+
+      $("isrAguLiq").value = fmtNum(r2(liq.aguinaldo), 2);
+      $("isrB14Liq").value = fmtNum(r2(liq.bono14), 2);
+
+      const r = calcISR(liq);
+
+      $("isrTotSal").textContent = fmt(r2(r.totSal));
+      $("isrTotBon").textContent = fmt(r2(r.totBon));
+      $("isrTotHE").textContent  = fmt(r2(r.totHE));
+      $("isrTotOtr").textContent = fmt(r2(r.totOtr));
+
+      $("isrIngTotal").textContent = fmt(r.ingresos);
+
+      // 
+      $("isrIGSSVal").textContent  = fmt(r.igssISR);
+      $("isrDedAgu").textContent   = fmt(r.dedAgu);
+      $("isrDedB14").textContent   = fmt(r.dedB14);
+      $("isrDedLey").textContent   = fmt(48000);
+      $("isrDedTotal").textContent = fmt(r.deducibles);
+
+      $("isrRentaNeta").textContent = fmt(r.rentaNeta);
+      $("isrImpDet").textContent    = fmt(r.impDet);
+
+      $("isrDiffLabel").textContent = r.useRet ? r.diffLabel : "Diferencia";
+      $("isrDiffVal").textContent   = r.useRet ? fmt(r.diffShow) : fmt(0);
+    }
+
+    // INIT
+    buildMonthsList();
+    renderMonthsTable();
+
+    buildISRMonthsList();
+    autofillISRDesdeDatos();
+    renderISRTable();
+
+    setMoneyInputBehavior($("isrAgu"), ()=>renderISR());
+    setMoneyInputBehavior($("isrB14"), ()=>renderISR());
+
+    $("chkRetenido").addEventListener("change", ()=>{
+      const on = $("chkRetenido").checked;
+      const inp = $("isrRetenido");
+      if(on){
+        inp.readOnly = false;
+        inp.classList.remove("readonly");
+      } else {
+        inp.readOnly = true;
+        inp.classList.add("readonly");
+        inp.value = fmtNum(0,2);
+      }
+      renderISR();
+    });
+    setMoneyInputBehavior($("isrRetenido"), ()=>renderISR());
+
+    setMoneyInputBehavior($("salarioMensual"), null);
+    $("salarioMensual").addEventListener("blur", ()=>{
+      recalcSalarioDiario();
+      autofillMesesDesdeSalario();
+
+      autofillISRDesdeDatos();
+      renderISRTable();
+
+      renderMonthsTable();
+      renderAll();
+    });
+
+    // Botones
+    $("recalcBtn").addEventListener("click", () => renderAll());
+    $("clearEditableBtn").addEventListener("click", clearEditableMonths);
+    $("csvBtn").addEventListener("click", downloadCSV);
+    $("xlsxBtn").addEventListener("click", exportExcel);
+    $("printBtn").addEventListener("click", exportPDFOffline);
+    $("pdfLiqBtn")?.addEventListener("click", savePDFResumenLiquidacion);
+    $("pdfIsrBtn")?.addEventListener("click", savePDFResumenISR);
+
+
+    // Inputs
+    ["nombre","ingreso","baja","vacGozadas","hePend","otrosDesc"].forEach(id=>{
+      $(id).addEventListener("input", ()=>{ renderAll(); });
+      $(id).addEventListener("change", ()=>{
+        if(id === "baja" || id === "ingreso"){
+          buildMonthsList();
+          renderMonthsTable();
+
+          buildISRMonthsList();
+          autofillISRDesdeDatos();
+          renderISRTable();
+          renderISR();
+        }
+        renderAll();
+      });
+    });
+
+    $("chkSueldoPend").addEventListener("change", ()=>renderAll());
+    $("chkIndem").addEventListener("change", ()=>renderAll());
+    $("indemPct").addEventListener("input", ()=>renderAll());
+    $("indemPct").addEventListener("change", ()=>renderAll());
+
+    // Tabs
+    document.querySelectorAll(".tabbtn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("active"));
+        document.querySelectorAll(".tabpanel").forEach(p=>p.classList.remove("active"));
+
+        btn.classList.add("active");
+        const id = btn.getAttribute("data-tab");
+        document.getElementById(id).classList.add("active");
+
+        if(id === "isrTab") renderISR();
+	    toggleISRPdfButton(); //
+      });
+    });
+
+    recalcSalarioDiario();
+    renderAll();
+    toggleISRPdfButton();
+
+  })();
+  </script>
+</body>
+</html>
