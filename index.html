@@ -78,17 +78,17 @@
       <button type="button" class="tabbtn" data-tab="isrTab">ISR (año en curso)</button>
     </div>
 
+    <div class="row print-hide" id="topActions">
+      <button id="pdfLiqBtn" type="button">Guardar PDF (Resumen Liquidación)</button>
 
-<div class="row print-hide" id="topActions">
-  <button id="pdfLiqBtn" type="button">Guardar PDF (Resumen Liquidación)</button>
+      <span id="isrPdfWrap" style="display:none;">
+        <button id="pdfIsrBtn" type="button">Guardar PDF (Resumen ISR)</button>
+      </span>
 
-<span id="isrPdfWrap" style="display:none;">
-  <button id="pdfIsrBtn" type="button">Guardar PDF (Resumen ISR)</button>
-</span>
-
-  <button id="printBtn" type="button">Imprimir / Guardar PDF (offline)</button>
-  <span class="muted right">Tip: selecciona “Guardar como PDF”.</span>
-</div>
+      <button id="saveSheetsBtn" type="button">Guardar datos (Google Sheet)</button>
+      <button id="printBtn" type="button">Imprimir / Guardar PDF (offline)</button>
+      <span class="muted right">Tip: selecciona “Guardar como PDF”.</span>
+    </div>
 
     <!-- =========================
          TAB: LIQUIDACIÓN
@@ -96,6 +96,11 @@
     <div id="liqTab" class="tabpanel active">
 
       <div class="grid">
+        <div>
+          <label>Correo electrónico</label>
+          <input id="correo" type="email" placeholder="correo@ejemplo.com" value="">
+        </div>
+
         <div>
           <label>Nombre</label>
           <input id="nombre" type="text" placeholder="Nombre del colaborador" value="">
@@ -140,7 +145,7 @@
           <input id="chkSueldoPend" type="checkbox" checked>
           <div>
             <div style="font-size:13px;"><b>Sueldo pendiente</b> <span class="tag">IGSS aplica si activo</span></div>
-            <div class="muted">Si está activo: paga los días del mes según la fecha de baja (ej. 03/04 → 3 días).</div>
+            <div class="muted">Si está activo: paga los días del mes según la fecha de baja.</div>
           </div>
         </div>
 
@@ -168,7 +173,6 @@
         <button id="clearEditableBtn" type="button">Borrar datos (meses editables)</button>
         <button id="csvBtn" type="button">Descargar CSV (12 meses)</button>
         <button id="xlsxBtn" type="button">Exportar Excel</button>
-      
         <span class="muted right">Redondeo: solo al final (2 decimales).</span>
       </div>
 
@@ -292,7 +296,6 @@
         <h3>Deducibles</h3>
 
         <div class="summaryRows">
-          <!-- ✅ ÚNICO IGSS: aquí -->
           <div class="summaryRow">
             <span>IGSS (ISR)</span>
             <span id="isrIGSSVal">Q 0.00</span>
@@ -350,10 +353,6 @@
             <div style="font-size:18px;font-weight:800;" id="isrDiffVal">Q 0.00</div>
           </div>
         </div>
-
-        <div class="muted" style="margin-top:10px;">
-          
-        </div>
       </div>
 
     </div><!-- /isrTab -->
@@ -367,11 +366,17 @@
   (() => {
     const $ = (id) => document.getElementById(id);
 
-  function toggleISRPdfButton(){
-    const isrTabActive = document.getElementById("isrTab").classList.contains("active");
-    const wrap = $("isrPdfWrap");
-    if(wrap) wrap.style.display = isrTabActive ? "" : "none";
-}
+    // ✅ TU URL (Apps Script Web App)
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbw8E8-TtFUluI-HrTKWvued64YB-rg9ukbM_JOugKH0AIILrUr4Ozouo0KyMSg_Uk1r/exec";
+
+    const pageLoadTs = Date.now();
+
+    function toggleISRPdfButton(){
+      const isrTabActive = document.getElementById("isrTab").classList.contains("active");
+      const wrap = $("isrPdfWrap");
+      if(wrap) wrap.style.display = isrTabActive ? "" : "none";
+    }
+
     window.onerror = function(message, source, lineno, colno, error) {
       const box = $("errBox");
       box.style.display = "block";
@@ -553,7 +558,7 @@
       const ingreso = parseDate("ingreso");
       const baja = parseDate("baja");
       if(!ingreso || !baja){
-        showError("Faltan fechas o son inválidas. Usa el selector (calendario).");
+        showError("Faltan fechas o son inválidas.");
         return null;
       }
       if(baja < ingreso){
@@ -836,6 +841,7 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
       const wb = XLSX.utils.book_new();
       const resumen = [
+        ["Correo", $("correo").value],
         ["Nombre", $("nombre").value],
         ["Ingreso", $("ingreso").value],
         ["Baja", $("baja").value],
@@ -858,253 +864,112 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
     function exportPDFOffline(){ window.print(); }
 
-function pdfText(doc, text, x, y, maxWidth){
-  const lines = doc.splitTextToSize(String(text ?? ""), maxWidth);
-  doc.text(lines, x, y);
-  return y + (lines.length * 6);
-}
+    function pdfText(doc, text, x, y, maxWidth){
+      const lines = doc.splitTextToSize(String(text ?? ""), maxWidth);
+      doc.text(lines, x, y);
+      return y + (lines.length * 6);
+    }
 
-function savePDFResumenLiquidacion(){
-  const r = calc();
-  if(!r) return;
+    function savePDFResumenLiquidacion(){
+      const r = calc();
+      if(!r) return;
 
-  if(!window.jspdf || !window.jspdf.jsPDF){
-    showError("No se cargó jsPDF. Revisa internet o bloqueo del CDN.");
-    return;
-  }
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        showError("No se cargó jsPDF. Revisa internet o bloqueo del CDN.");
+        return;
+      }
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:"mm", format:"a4" });
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:"mm", format:"a4" });
 
-  const margin = 14;
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const maxW = pageW - margin*2;
+      const margin = 14;
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const maxW = pageW - margin*2;
 
-  let y = 16;
+      let y = 16;
 
-  // Header
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(14);
-  doc.text("Resumen de Liquidación (Guatemala)", margin, y); y += 8;
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(14);
+      doc.text("Resumen de Liquidación (Guatemala)", margin, y); y += 8;
 
-  doc.setFont("helvetica","normal");
-  doc.setFontSize(10);
-  doc.text(`Nombre: ${$("nombre").value || "-"}`, margin, y); y += 6;
-  doc.text(`Ingreso: ${$("ingreso").value || "-"}`, margin, y); y += 6;
-  doc.text(`Baja: ${$("baja").value || "-"}`, margin, y); y += 6;
-  doc.text(`Salario mensual: ${fmt(r2(r.salarioMensual))}`, margin, y); y += 6;
-  doc.text(`Salario diario: ${fmt(r2(r.salarioDiario))}`, margin, y); y += 6;
-  doc.text(`Días de servicio: ${r.diasServicio}`, margin, y); y += 8;
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.text(`Correo: ${$("correo").value || "-"}`, margin, y); y += 6;
+      doc.text(`Nombre: ${$("nombre").value || "-"}`, margin, y); y += 6;
+      doc.text(`Ingreso: ${$("ingreso").value || "-"}`, margin, y); y += 6;
+      doc.text(`Baja: ${$("baja").value || "-"}`, margin, y); y += 6;
+      doc.text(`Salario mensual: ${fmt(r2(r.salarioMensual))}`, margin, y); y += 6;
+      doc.text(`Salario diario: ${fmt(r2(r.salarioDiario))}`, margin, y); y += 6;
+      doc.text(`Días de servicio: ${r.diasServicio}`, margin, y); y += 8;
 
-  // 2 columnas
-  const gap = 8;
-  const colW = (maxW - gap) / 2;
-  const xL = margin;
-  const xR = margin + colW + gap;
+      const gap = 8;
+      const colW = (maxW - gap) / 2;
+      const xL = margin;
+      const xR = margin + colW + gap;
 
-  const titleH = 6;
-  const lineH = 6;
+      const titleH = 6;
+      const lineH = 6;
 
-  const addColumn = (x, yStart, title, items) => {
-    let yy = yStart;
+      const addColumn = (x, yStart, title, items) => {
+        let yy = yStart;
 
-    doc.setFont("helvetica","bold");
-    doc.setFontSize(11);
-    doc.text(title, x, yy); yy += titleH;
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(11);
+        doc.text(title, x, yy); yy += titleH;
 
-    doc.setFont("helvetica","normal");
-    doc.setFontSize(10);
+        doc.setFont("helvetica","normal");
+        doc.setFontSize(10);
 
-    items.forEach(([k,v, isTotal])=>{
-      const label = String(k);
-      const val = fmt(r2(v));
+        items.forEach(([k,v, isTotal])=>{
+          const val = fmt(r2(v));
+          doc.setFont("helvetica", isTotal ? "bold" : "normal");
+          doc.text(String(k), x, yy);
+          doc.text(val, x + colW, yy, { align:"right" });
+          yy += lineH;
+        });
 
-      // etiqueta
-      doc.setFont("helvetica", isTotal ? "bold" : "normal");
-      doc.text(label, x, yy);
+        return yy;
+      };
 
-      // valor alineado a derecha dentro de la columna
-      const valX = x + colW;
-      doc.text(val, valX, yy, { align:"right" });
+      const ingresos = [
+        ["Aguinaldo", r.aguinaldo, false],
+        ["Bono 14", r.bono14, false],
+        ["Vacaciones", r.vacPago, false],
+        ["Indemnización", r.indemnizacion, false],
+        ["Sueldo pendiente", r.sueldoPend, false],
+        ["HE pendiente", r.hePago, false],
+        ["SUBTOTAL", r.ingresosSubtotal, true],
+      ];
 
-      yy += lineH;
-    });
+      const descuentos = [
+        ["IGSS", r.igss, false],
+        ["Otros", r.otrosDesc, false],
+        ["SUBTOTAL", r.descuentosSubtotal, true],
+      ];
 
-    return yy;
-  };
+      const yEndL = addColumn(xL, y, "INGRESOS", ingresos);
+      const yEndR = addColumn(xR, y, "DESCUENTOS", descuentos);
 
-  const ingresos = [
-    ["Aguinaldo", r.aguinaldo, false],
-    ["Bono 14", r.bono14, false],
-    ["Vacaciones", r.vacPago, false],
-    ["Indemnización", r.indemnizacion, false],
-    ["Sueldo pendiente", r.sueldoPend, false],
-    ["HE pendiente", r.hePago, false],
-    ["SUBTOTAL", r.ingresosSubtotal, true],
-  ];
+      const yAfterCols = Math.max(yEndL, yEndR) + 6;
 
-  const descuentos = [
-    ["IGSS", r.igss, false],
-    ["Otros", r.otrosDesc, false],
-    ["SUBTOTAL", r.descuentosSubtotal, true],
-  ];
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(13);
+      doc.text(`NETO: ${fmt(r2(r.neto))}`, margin, yAfterCols);
 
-  const yEndL = addColumn(xL, y, "INGRESOS", ingresos);
-  const yEndR = addColumn(xR, y, "DESCUENTOS", descuentos);
+      const yFooter = pageH - 22;
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
 
-  // NETO debajo (centrado y destacado)
-  const yAfterCols = Math.max(yEndL, yEndR) + 6;
+      doc.line(margin, yFooter, margin + 70, yFooter);
+      doc.text($("nombre").value ? $("nombre").value : "Firma", margin, yFooter + 5);
 
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(13);
-  doc.text(`NETO: ${fmt(r2(r.neto))}`, margin, yAfterCols);
+      const hoy = new Date();
+      const fecha = hoy.toLocaleDateString("es-GT", { year:"numeric", month:"2-digit", day:"2-digit" });
+      doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
 
-  // Firma / Fecha (al pie)
-  const yFooter = pageH - 22;
-  doc.setFont("helvetica","normal");
-  doc.setFontSize(10);
-
-const nombreFirma = $("nombre").value || "______________________";
-
-doc.line(margin, yFooter, margin + 70, yFooter);
-doc.text(nombreFirma, margin, yFooter + 5);
-
-
-  const hoy = new Date();
-  const fecha = hoy.toLocaleDateString("es-GT", { year:"numeric", month:"2-digit", day:"2-digit" });
-  doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
-
-  const filename = `Resumen_Liquidacion_${($("nombre").value||"colaborador").replaceAll(" ","_")}.pdf`;
-  doc.save(filename);
-}
-
-function savePDFResumenISR(){
-  const liq = calc();
-  if(!liq) return;
-
-  if(!window.jspdf || !window.jspdf.jsPDF){
-    showError("No se cargó jsPDF. Revisa que tengas internet o que no esté bloqueado el CDN.");
-    return;
-  }
-
-  const r = calcISR(liq);
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:"mm", format:"a4" });
-
-  const margin = 14;
-  const pageW = doc.internal.pageSize.getWidth();
-  const maxW = pageW - margin*2;
-
-  let y = 16;
-
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(14);
-  doc.text("Resumen ISR (año en curso) - Guatemala", margin, y); y += 8;
-
-  doc.setFont("helvetica","normal");
-  doc.setFontSize(10);
-
-  y = pdfText(doc, `Nombre: ${$("nombre").value || "-"}`, margin, y, maxW);
-  y = pdfText(doc, `Baja (ancla): ${$("baja").value || "-"}`, margin, y, maxW);
-
-  y += 4;
-  doc.setFont("helvetica","bold");
-  doc.text("INGRESOS (ISR)", margin, y); y += 6;
-  doc.setFont("helvetica","normal");
-
-  const ingresosISR = [
-    ["Total salarios", r.totSal],
-    ["Total bono incentivo", r.totBon],
-    ["Total horas extra", r.totHE],
-    ["Total otros", r.totOtr],
-    ["Aguinaldo (editable)", r.aguEdit],
-    ["Aguinaldo (liquidación)", r.aguLiq],
-    ["Bono 14 (editable)", r.b14Edit],
-    ["Bono 14 (liquidación)", r.b14Liq],
-    ["SUBTOTAL INGRESOS", r.ingresos],
-  ];
-
-  ingresosISR.forEach(([k,v])=>{
-    y = pdfText(doc, `${k}: ${fmt(r2(v))}`, margin, y, maxW);
-  });
-
-  y += 4;
-  doc.setFont("helvetica","bold");
-  doc.text("DEDUCIBLES", margin, y); y += 6;
-  doc.setFont("helvetica","normal");
-
-  const ded = [
-    ["IGSS (ISR)", r.igssISR],
-    ["Aguinaldo (total)", r.dedAgu],
-    ["Bono 14 (total)", r.dedB14],
-    ["Deducible fijo", r.dedFijo],
-    ["TOTAL DEDUCIBLES", r.deducibles],
-  ];
-
-  ded.forEach(([k,v])=>{
-    y = pdfText(doc, `${k}: ${fmt(r2(v))}`, margin, y, maxW);
-  });
-
-  y += 6;
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(12);
-  y = pdfText(doc, `Renta Neta: ${fmt(r2(r.rentaNeta))}`, margin, y, maxW);
-  y = pdfText(doc, `Impuesto Determinado: ${fmt(r2(r.impDet))}`, margin, y, maxW);
-
-  if(r.useRet){
-    y += 2;
-    doc.setFont("helvetica","normal");
-    y = pdfText(doc, `Retenido en el año: ${fmt(r2(r.retenido))}`, margin, y, maxW);
-    doc.setFont("helvetica","bold");
-    y = pdfText(doc, `${r.diffLabel}: ${fmt(r2(r.diffShow))}`, margin, y, maxW);
-  }
-
-  const filename = `Resumen_ISR_${($("nombre").value||"colaborador").replaceAll(" ","_")}.pdf`;
-  // Firma / Fecha (al pie)
-
-const pageH = doc.internal.pageSize.getHeight();
-
-const yFooter = pageH - 22;
-doc.setFont("helvetica","normal");
-doc.setFontSize(10);
-
-const nombreFirma = $("nombre").value || "______________________";
-
-doc.line(margin, yFooter, margin + 70, yFooter);
-doc.text(nombreFirma, margin, yFooter + 5);
-
-
-const hoy = new Date();
-const fecha = hoy.toLocaleDateString("es-GT", { year:"numeric", month:"2-digit", day:"2-digit" });
-doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
-
-  doc.save(filename);
-}
-
-
-
-    function autofillMesesDesdeSalario(){
-      const ingreso = parseDate("ingreso");
-      const ingresoMonthStart = ingreso ? startOfMonth(ingreso) : null;
-
-      const sm = num($("salarioMensual").value);
-      if(sm <= 0) return;
-
-      meses = meses.map(it => {
-        const frozen = ingresoMonthStart && it.date < ingresoMonthStart;
-        if(frozen) return { ...it, ord: 0, extra: 0 };
-
-        const ord = num(it.ord);
-        const extra = num(it.extra);
-
-        return {
-          ...it,
-          ord: (ord === 0 ? sm : ord),
-          extra: extra
-        };
-      });
+      const filename = `Resumen_Liquidacion_${($("nombre").value||"colaborador").replaceAll(" ","_")}.pdf`;
+      doc.save(filename);
     }
 
     // =====================
@@ -1219,16 +1084,14 @@ doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
       const rentaNeta = r2(ingresos - deducibles);
 
       let impDet = 0;
-      
       if (rentaNeta < 0){
-	impDet = 0;
-	} else {
-
-      if (rentaNeta > 300000){
-        impDet = r2((rentaNeta - 300000) * 0.07 + 15000);
+        impDet = 0;
       } else {
-        impDet = r2(rentaNeta * 0.05);
-      }
+        if (rentaNeta > 300000){
+          impDet = r2((rentaNeta - 300000) * 0.07 + 15000);
+        } else {
+          impDet = r2(rentaNeta * 0.05);
+        }
       }
 
       const useRet = $("chkRetenido").checked;
@@ -1277,7 +1140,6 @@ doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
 
       $("isrIngTotal").textContent = fmt(r.ingresos);
 
-      // 
       $("isrIGSSVal").textContent  = fmt(r.igssISR);
       $("isrDedAgu").textContent   = fmt(r.dedAgu);
       $("isrDedB14").textContent   = fmt(r.dedB14);
@@ -1289,6 +1151,179 @@ doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
 
       $("isrDiffLabel").textContent = r.useRet ? r.diffLabel : "Diferencia";
       $("isrDiffVal").textContent   = r.useRet ? fmt(r.diffShow) : fmt(0);
+    }
+
+    function savePDFResumenISR(){
+      const liq = calc();
+      if(!liq) return;
+
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        showError("No se cargó jsPDF. Revisa que tengas internet o que no esté bloqueado el CDN.");
+        return;
+      }
+
+      const r = calcISR(liq);
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:"mm", format:"a4" });
+
+      const margin = 14;
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const maxW = pageW - margin*2;
+
+      let y = 16;
+
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(14);
+      doc.text("Resumen ISR (año en curso) - Guatemala", margin, y); y += 8;
+
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+
+      y = pdfText(doc, `Correo: ${$("correo").value || "-"}`, margin, y, maxW);
+      y = pdfText(doc, `Nombre: ${$("nombre").value || "-"}`, margin, y, maxW);
+      y = pdfText(doc, `Baja (ancla): ${$("baja").value || "-"}`, margin, y, maxW);
+
+      y += 4;
+      doc.setFont("helvetica","bold");
+      doc.text("INGRESOS (ISR)", margin, y); y += 6;
+      doc.setFont("helvetica","normal");
+
+      const ingresosISR = [
+        ["Total salarios", r.totSal],
+        ["Total bono incentivo", r.totBon],
+        ["Total horas extra", r.totHE],
+        ["Total otros", r.totOtr],
+        ["Aguinaldo (editable)", r.aguEdit],
+        ["Aguinaldo (liquidación)", r.aguLiq],
+        ["Bono 14 (editable)", r.b14Edit],
+        ["Bono 14 (liquidación)", r.b14Liq],
+        ["SUBTOTAL INGRESOS", r.ingresos],
+      ];
+
+      ingresosISR.forEach(([k,v])=>{
+        y = pdfText(doc, `${k}: ${fmt(r2(v))}`, margin, y, maxW);
+      });
+
+      y += 4;
+      doc.setFont("helvetica","bold");
+      doc.text("DEDUCIBLES", margin, y); y += 6;
+      doc.setFont("helvetica","normal");
+
+      const ded = [
+        ["IGSS (ISR)", r.igssISR],
+        ["Aguinaldo (total)", r.dedAgu],
+        ["Bono 14 (total)", r.dedB14],
+        ["Deducible fijo", r.dedFijo],
+        ["TOTAL DEDUCIBLES", r.deducibles],
+      ];
+
+      ded.forEach(([k,v])=>{
+        y = pdfText(doc, `${k}: ${fmt(r2(v))}`, margin, y, maxW);
+      });
+
+      y += 6;
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(12);
+      y = pdfText(doc, `Renta Neta: ${fmt(r2(r.rentaNeta))}`, margin, y, maxW);
+      y = pdfText(doc, `Impuesto Determinado: ${fmt(r2(r.impDet))}`, margin, y, maxW);
+
+      if(r.useRet){
+        y += 2;
+        doc.setFont("helvetica","normal");
+        y = pdfText(doc, `Retenido en el año: ${fmt(r2(r.retenido))}`, margin, y, maxW);
+        doc.setFont("helvetica","bold");
+        y = pdfText(doc, `${r.diffLabel}: ${fmt(r2(r.diffShow))}`, margin, y, maxW);
+      }
+
+      const yFooter = pageH - 22;
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+
+      doc.line(margin, yFooter, margin + 70, yFooter);
+      doc.text($("nombre").value ? $("nombre").value : "Firma", margin, yFooter + 5);
+
+      const hoy = new Date();
+      const fecha = hoy.toLocaleDateString("es-GT", { year:"numeric", month:"2-digit", day:"2-digit" });
+      doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
+
+      const filename = `Resumen_ISR_${($("nombre").value||"colaborador").replaceAll(" ","_")}.pdf`;
+      doc.save(filename);
+    }
+
+    function autofillMesesDesdeSalario(){
+      const ingreso = parseDate("ingreso");
+      const ingresoMonthStart = ingreso ? startOfMonth(ingreso) : null;
+
+      const sm = num($("salarioMensual").value);
+      if(sm <= 0) return;
+
+      meses = meses.map(it => {
+        const frozen = ingresoMonthStart && it.date < ingresoMonthStart;
+        if(frozen) return { ...it, ord: 0, extra: 0 };
+
+        const ord = num(it.ord);
+        const extra = num(it.extra);
+
+        return { ...it, ord: (ord === 0 ? sm : ord), extra };
+      });
+    }
+
+    // =========================
+    // ✅ CAPTURA A GOOGLE SHEETS
+    // =========================
+    function isValidEmail(email){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||"").trim());
+    }
+
+    async function guardarEnGoogleSheets(){
+      const r = calc();
+      if(!r) return;
+
+      const correo = ($("correo").value || "").trim();
+      if(!isValidEmail(correo)){
+        alert("Correo inválido.");
+        return;
+      }
+
+      const deltaSeconds = Math.round((Date.now() - pageLoadTs) / 1000);
+      const hp = ""; // honeypot
+
+      const payload = {
+        correo,
+        nombre: $("nombre").value || "",
+        fechaIngreso: $("ingreso").value || "",
+        fechaBaja: $("baja").value || "",
+        sueldo: r.salarioMensual,
+        aguinaldo: r.aguinaldo,
+        bono14: r.bono14,
+        vacaciones: r.vacPago,
+        indemnizacion: r.indemnizacion,
+
+        // Seguridad básica
+        hp,
+        deltaSeconds,
+        ua: navigator.userAgent || "",
+        origin: location.origin || "",
+        referer: document.referrer || "",
+        turnstileToken: "" // opcional
+      };
+
+      try {
+        await fetch(
+          SHEETS_URL + "?origin=" + encodeURIComponent(payload.origin) + "&referer=" + encodeURIComponent(payload.referer),
+          {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type":"application/json" },
+            body: JSON.stringify(payload)
+          }
+        );
+        alert("Datos guardados ✅");
+      } catch (e) {
+        alert("No se pudo guardar. Revisa el despliegue del Apps Script.");
+      }
     }
 
     // INIT
@@ -1334,13 +1369,13 @@ doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
     $("clearEditableBtn").addEventListener("click", clearEditableMonths);
     $("csvBtn").addEventListener("click", downloadCSV);
     $("xlsxBtn").addEventListener("click", exportExcel);
-    $("printBtn").addEventListener("click", exportPDFOffline);
-    $("pdfLiqBtn")?.addEventListener("click", savePDFResumenLiquidacion);
-    $("pdfIsrBtn")?.addEventListener("click", savePDFResumenISR);
-
+    $("printBtn").addEventListener("click", () => window.print());
+    $("pdfLiqBtn").addEventListener("click", savePDFResumenLiquidacion);
+    $("pdfIsrBtn").addEventListener("click", savePDFResumenISR);
+    $("saveSheetsBtn").addEventListener("click", guardarEnGoogleSheets);
 
     // Inputs
-    ["nombre","ingreso","baja","vacGozadas","hePend","otrosDesc"].forEach(id=>{
+    ["correo","nombre","ingreso","baja","vacGozadas","hePend","otrosDesc"].forEach(id=>{
       $(id).addEventListener("input", ()=>{ renderAll(); });
       $(id).addEventListener("change", ()=>{
         if(id === "baja" || id === "ingreso"){
@@ -1372,14 +1407,13 @@ doc.text(`Fecha: ${fecha}`, pageW - margin, yFooter + 5, { align:"right" });
         document.getElementById(id).classList.add("active");
 
         if(id === "isrTab") renderISR();
-	    toggleISRPdfButton(); //
+        toggleISRPdfButton();
       });
     });
 
     recalcSalarioDiario();
     renderAll();
     toggleISRPdfButton();
-
   })();
   </script>
 </body>
