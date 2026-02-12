@@ -1,9 +1,13 @@
 <!doctype html>
 <html lang="es">
 <head>
+  <!-- ✅ reCAPTCHA v3 -->
+  <script src="https://www.google.com/recaptcha/api.js?render=6LdCsmksAAAAAAUeNIkarO3JBuYdK_ekJHcVXLdq"></script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Liquidación Laboral - Guatemala</title>
+
   <style>
     body{font-family:system-ui,Arial,sans-serif;margin:24px}
     h2{margin:0 0 12px}
@@ -359,6 +363,7 @@
 
   </div><!-- /app -->
 
+  <!-- Librerías opcionales (para exportar Excel/PDF). Si el usuario está offline o bloquea CDN, fallarán y mostramos error. -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
@@ -368,6 +373,9 @@
 
     // ✅ TU URL (Apps Script Web App)
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbw8E8-TtFUluI-HrTKWvued64YB-rg9ukbM_JOugKH0AIILrUr4Ozouo0KyMSg_Uk1r/exec";
+
+    // ✅ TU SITE KEY reCAPTCHA v3
+    const RECAPTCHA_SITE_KEY = "6LdCsmksAAAAAAUeNIkarO3JBuYdK_ekJHcVXLdq";
 
     const pageLoadTs = Date.now();
 
@@ -862,8 +870,6 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
       XLSX.writeFile(wb, `Liquidacion_${($("nombre").value||"colaborador").replaceAll(" ","_")}.xlsx`);
     }
 
-    function exportPDFOffline(){ window.print(); }
-
     function pdfText(doc, text, x, y, maxWidth){
       const lines = doc.splitTextToSize(String(text ?? ""), maxWidth);
       doc.text(lines, x, y);
@@ -1073,7 +1079,6 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
       const b14Liq = liq ? num(liq.bono14) : 0;
 
       const igssISR = r2(totSal * 0.0483);
-
       const ingresos = r2(totSal + totBon + totHE + totOtr + aguEdit + aguLiq + b14Edit + b14Liq);
 
       const dedAgu = r2(aguEdit + aguLiq);
@@ -1271,10 +1276,21 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     }
 
     // =========================
-    // ✅ CAPTURA A GOOGLE SHEETS
+    // ✅ CAPTURA A GOOGLE SHEETS (con reCAPTCHA v3)
     // =========================
     function isValidEmail(email){
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||"").trim());
+    }
+
+    function getRecaptchaToken(action){
+      return new Promise((resolve, reject) => {
+        if(!window.grecaptcha) return reject(new Error("grecaptcha_no_cargado"));
+        window.grecaptcha.ready(() => {
+          window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action })
+            .then(resolve)
+            .catch(reject);
+        });
+      });
     }
 
     async function guardarEnGoogleSheets(){
@@ -1288,7 +1304,18 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
       }
 
       const deltaSeconds = Math.round((Date.now() - pageLoadTs) / 1000);
-      const hp = ""; // honeypot
+      const hp = ""; // honeypot (si luego quieres, te pongo un input hidden)
+
+      const recaptchaAction = "lead_submit";
+      let recaptchaToken = "";
+
+      try {
+        recaptchaToken = await getRecaptchaToken(recaptchaAction);
+      } catch (e) {
+        console.log("reCAPTCHA error:", e);
+        alert("No se pudo validar reCAPTCHA. Intenta de nuevo.");
+        return;
+      }
 
       const payload = {
         correo,
@@ -1301,28 +1328,37 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
         vacaciones: r.vacPago,
         indemnizacion: r.indemnizacion,
 
-        // Seguridad básica
+        // Anti-spam básico
         hp,
         deltaSeconds,
         ua: navigator.userAgent || "",
         origin: location.origin || "",
         referer: document.referrer || "",
-        turnstileToken: "" // opcional
+
+        // reCAPTCHA
+        recaptchaToken,
+        recaptchaAction
       };
 
       try {
-        await fetch(
-          SHEETS_URL + "?origin=" + encodeURIComponent(payload.origin) + "&referer=" + encodeURIComponent(payload.referer),
-          {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type":"application/json" },
-            body: JSON.stringify(payload)
-          }
-        );
+        const res = await fetch(SHEETS_URL, {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const out = await res.json().catch(() => null);
+
+        if(!res.ok || !out || !out.ok){
+          console.log("Respuesta servidor:", out);
+          alert("No se pudo guardar. Captcha/seguridad o servidor rechazó la solicitud.");
+          return;
+        }
+
         alert("Datos guardados ✅");
       } catch (e) {
-        alert("No se pudo guardar. Revisa el despliegue del Apps Script.");
+        console.log("Fetch error:", e);
+        alert("No se pudo guardar. Revisa tu conexión o el Apps Script.");
       }
     }
 
