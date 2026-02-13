@@ -17,6 +17,7 @@
     input,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:14px;box-sizing:border-box}
     button{padding:10px 14px;border:1px solid #ccc;border-radius:10px;background:#fff;cursor:pointer}
     button:hover{background:#f6f6f6}
+    button:disabled{opacity:.6;cursor:not-allowed}
     .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
     .muted{color:#666;font-size:12px}
     .panel{border:1px solid #eee;border-radius:12px;padding:12px;margin-top:14px}
@@ -54,7 +55,7 @@
 
     @media print{
       body{margin:0}
-      button,.warn,.panel.print-hide,.row.print-hide{display:none !important}
+      button,.warn,.panel.print-hide,.row.print-hide,.welcomeBox,#toast,.mobileFooter{display:none !important}
       .card{border:none;border-radius:0}
       .panel{border:none}
       th{position:static}
@@ -64,6 +65,7 @@
     .tabs{display:flex;gap:8px;margin:12px 0 0;flex-wrap:wrap}
     .tabbtn{padding:10px 14px;border:1px solid #ccc;border-radius:10px;background:#fff;cursor:pointer}
     .tabbtn.active{background:#f3f6ff;border-color:#c7d2fe}
+    .tabbtn.lockedTab{opacity:.55}
     .tabpanel{display:none}
     .tabpanel.active{display:block}
 
@@ -115,6 +117,7 @@
     .mobileFooter .mfRow{
       display:flex;
       gap:8px;
+      flex-wrap:wrap;
     }
 
     .mobileFooter button{
@@ -123,7 +126,7 @@
     }
 
     @media (max-width: 900px){
-      #topActions{ display:none; }
+      #topActions{ display:none; } /* oculto barra de PC */
       .mobileFooter{ display:block; }
     }
 
@@ -159,9 +162,22 @@
       box-shadow:0 10px 30px rgba(0,0,0,.08);
     }
 
-    .lockOverlay .lockCard h4{ margin:0 0 8px; font-size:14px; }
-    .lockOverlay .lockCard p{ margin:0 0 10px; font-size:13px; color:#555; line-height:1.35; }
-    .lockOverlay .lockCard .mini{ font-size:12px; color:#666; }
+    .lockOverlay .lockCard h4{
+      margin:0 0 8px;
+      font-size:14px;
+    }
+
+    .lockOverlay .lockCard p{
+      margin:0 0 10px;
+      font-size:13px;
+      color:#555;
+      line-height:1.35;
+    }
+
+    .lockOverlay .lockCard .mini{
+      font-size:12px;
+      color:#666;
+    }
 
     .lockOverlay .lockCard .btnRow{
       display:flex;
@@ -170,35 +186,162 @@
       margin-top:10px;
     }
 
-    .lockOverlay .lockCard .btnRow button{ flex:1; }
+    .lockOverlay .lockCard .btnRow button{
+      flex:1;
+    }
 
+    /* Opcional: resaltar campos requeridos cuando intentan guardar */
     .reqError{
       border-color:#ff6b6b !important;
       box-shadow:0 0 0 3px rgba(255,107,107,.15);
     }
+
+    /* ====== Botones destacados ====== */
+    .btnSave{
+      background:#1f7ae0;
+      color:#fff;
+      border-color:#1f7ae0;
+      font-weight:600;
+    }
+    .btnSave:hover{ background:#1762b4; }
+
+    .btnRecalc{
+      background:#10b981;
+      color:#fff;
+      border-color:#10b981;
+      font-weight:600;
+    }
+    .btnRecalc:hover{ background:#0f9f6e; }
+
+    .btnSaved{
+      background:#0f9f6e;
+      color:#fff;
+      border-color:#0f9f6e;
+      font-weight:700;
+    }
+
+    /* ====== Welcome Message ====== */
+    .welcomeBox{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,.25);
+      backdrop-filter:blur(4px);
+      z-index:999;
+    }
+    .welcomeCard{
+      background:#fff;
+      border-radius:14px;
+      border:1px solid #eee;
+      padding:18px;
+      max-width:520px;
+      width:90%;
+      box-shadow:0 20px 50px rgba(0,0,0,.15);
+    }
+    .welcomeCard h3{ margin:0 0 8px; font-size:16px; }
+    .welcomeCard p{
+      margin:0 0 10px;
+      font-size:13px;
+      color:#555;
+      line-height:1.4;
+    }
+
+    /* ====== Toast (check animado) ====== */
+    #toast{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      z-index:1000;
+      display:none;
+      align-items:center;
+      gap:10px;
+      background:#fff;
+      border:1px solid #e9e9e9;
+      border-radius:14px;
+      padding:12px 14px;
+      box-shadow:0 18px 45px rgba(0,0,0,.14);
+      max-width:420px;
+    }
+    #toast.show{ display:flex; animation: toastIn .25s ease-out; }
+    @keyframes toastIn{
+      from{ transform: translateY(10px); opacity:0; }
+      to{ transform: translateY(0); opacity:1; }
+    }
+    .checkAnim{
+      width:28px;height:28px;
+      border-radius:999px;
+      background:#10b981;
+      display:grid;
+      place-items:center;
+      flex:0 0 28px;
+      transform:scale(.7);
+      animation: pop .35s ease-out forwards;
+    }
+    @keyframes pop{
+      to{ transform:scale(1); }
+    }
+    .checkAnim svg{
+      width:18px;height:18px;
+      stroke:#fff;
+      stroke-width:3;
+      fill:none;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      stroke-dasharray: 30;
+      stroke-dashoffset: 30;
+      animation: draw .45s .10s ease-out forwards;
+    }
+    @keyframes draw{
+      to{ stroke-dashoffset:0; }
+    }
+    .toastText .tTitle{ font-weight:800; font-size:13px; margin:0; }
+    .toastText .tDesc{ font-size:12px; color:#666; margin:2px 0 0; line-height:1.2; }
   </style>
 </head>
 
 <body>
   <h2>Calculadora de Liquidación Laboral (Guatemala)</h2>
 
-  <div class="card" id="app">
-
-    <!-- Footer móvil -->
-    <div class="mobileFooter print-hide">
-      <div class="mfRow">
-        <button id="mfSaveBtn" type="button">Guardar datos</button>
-        <button id="mfPDFBtn" type="button">PDF (Liquidación)</button>
-      </div>
-      <div class="mfRow" style="margin-top:8px;">
-        <button id="mfTabLiq" type="button">Liquidación</button>
-        <button id="mfTabISR" type="button">ISR</button>
+  <!-- Welcome -->
+  <div id="welcomeMsg" class="welcomeBox">
+    <div class="welcomeCard">
+      <h3>Bienvenido 👋</h3>
+      <p>Gracias por utilizar la herramienta de cálculo de liquidación laboral.</p>
+      <p>
+        Para ver los cálculos completos y habilitar la pestaña de ISR:
+        completa los datos iniciales y presiona <b>"Guardar datos"</b>.
+      </p>
+      <p class="muted">
+        Esta herramienta es informativa y no sustituye asesoría legal o contable.
+      </p>
+      <div class="row">
+        <button id="closeWelcomeBtn" class="btnRecalc" type="button">Entendido</button>
       </div>
     </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" aria-live="polite" aria-atomic="true">
+    <div class="checkAnim" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="M20 6L9 17l-5-5"></path>
+      </svg>
+    </div>
+    <div class="toastText">
+      <p class="tTitle" id="toastTitle">Guardado ✅</p>
+      <p class="tDesc" id="toastDesc">Datos registrados. Cálculos desbloqueados.</p>
+    </div>
+  </div>
+
+  <div class="card" id="app">
 
     <div class="tabs print-hide">
-      <button type="button" class="tabbtn active" data-tab="liqTab">Liquidación</button>
-      <button type="button" class="tabbtn" data-tab="isrTab">ISR (año en curso)</button>
+      <button type="button" class="tabbtn active" data-tab="liqTab" id="tabLiqBtn">Liquidación</button>
+      <button type="button" class="tabbtn lockedTab" data-tab="isrTab" id="tabIsrBtn" disabled title="Guarda los datos para habilitar ISR">
+        ISR (año en curso)
+      </button>
     </div>
 
     <div class="row print-hide" id="topActions">
@@ -208,9 +351,17 @@
         <button id="pdfIsrBtn" type="button">Guardar PDF (Resumen ISR)</button>
       </span>
 
-      <button id="saveSheetsBtn" type="button">Guardar datos</button>
+      <button id="saveSheetsBtn" type="button" class="btnSave">Guardar datos (Google Sheet)</button>
       <button id="printBtn" type="button">Imprimir / Guardar PDF (offline)</button>
       <span class="muted right">Tip: selecciona “Guardar como PDF”.</span>
+    </div>
+
+    <!-- ===== Mobile footer (para que no desaparezcan botones en cel) ===== -->
+    <div class="mobileFooter print-hide">
+      <div class="mfRow">
+        <button id="saveSheetsBtn_m" type="button" class="btnSave">Guardar datos</button>
+        <button id="recalcBtn_m" type="button" class="btnRecalc">Recalcular</button>
+      </div>
     </div>
 
     <!-- =========================
@@ -292,7 +443,7 @@
       </div>
 
       <div class="row print-hide">
-        <button id="recalcBtn" type="button">Recalcular</button>
+        <button id="recalcBtn" type="button" class="btnRecalc">Recalcular</button>
         <button id="clearEditableBtn" type="button">Borrar datos (meses editables)</button>
         <button id="csvBtn" type="button">Descargar CSV (12 meses)</button>
         <button id="xlsxBtn" type="button">Exportar Excel</button>
@@ -301,24 +452,10 @@
 
       <div id="errBox" class="error"></div>
 
-      <!-- ✅ LOCK AREA (Liqui) -->
+      <!-- 🔒 Lock area (todo lo de cálculos va aquí) -->
       <div id="lockAreaLiq" class="lockWrap locked">
-        <div class="lockOverlay">
-          <div class="lockCard">
-            <h4>Vista previa protegida</h4>
-            <p>
-              Para ver los cálculos, completa los datos y presiona <b>Guardar datos</b>.
-            </p>
-            <div class="mini">
-              Esto ayuda a reducir spam/bots y a registrar el uso (correo + resumen).
-            </div>
-            <div class="btnRow">
-              <button id="lockSaveBtn" type="button">Guardar datos (Desbloquear)</button>
-            </div>
-          </div>
-        </div>
-
         <div class="blurTarget">
+
           <div class="panel">
             <h3>Ingresos últimos 12 meses completos (editable)</h3>
             <div class="muted">(Se arma desde el mes anterior a la baja hacia atrás)</div>
@@ -366,7 +503,26 @@
             <h3>Detalle de cálculo</h3>
             <div id="breakdowns" class="break"></div>
           </div>
+
         </div><!-- /blurTarget -->
+
+        <div class="lockOverlay">
+          <div class="lockCard">
+            <h4>Primero guarda los datos</h4>
+            <p>
+              Para visualizar los cálculos completos y habilitar la pestaña ISR,
+              completa los campos de arriba y presiona <b>“Guardar datos”</b>.
+            </p>
+            <p class="mini">
+              Consejo: asegúrate de ingresar correo, nombre, fechas y salario mensual.
+            </p>
+            <div class="btnRow">
+              <button type="button" id="lockSaveBtn" class="btnSave">Guardar datos</button>
+              <button type="button" id="lockCloseWelcomeBtn">Cerrar mensaje</button>
+            </div>
+          </div>
+        </div>
+
       </div><!-- /lockAreaLiq -->
 
     </div><!-- /liqTab -->
@@ -376,21 +532,10 @@
          ========================= -->
     <div id="isrTab" class="tabpanel">
 
-      <!-- ✅ LOCK AREA (ISR) -->
+      <!-- 🔒 Lock area ISR -->
       <div id="lockAreaISR" class="lockWrap locked">
-        <div class="lockOverlay">
-          <div class="lockCard">
-            <h4>ISR protegido</h4>
-            <p>
-              Para acceder a la pestaña ISR, primero debes presionar <b>Guardar datos</b>.
-            </p>
-            <div class="btnRow">
-              <button id="lockSaveBtnISR" type="button">Guardar datos</button>
-            </div>
-          </div>
-        </div>
-
         <div class="blurTarget">
+
           <div class="panel">
             <h3>ISR – Ingresos del año en curso (anclado a la fecha de baja)</h3>
             <div class="muted">Meses de enero a mes de baja (editable). Bono incentivo por default: Q 250.00</div>
@@ -512,8 +657,22 @@
               </div>
             </div>
           </div>
+
         </div><!-- /blurTarget -->
+
+        <div class="lockOverlay">
+          <div class="lockCard">
+            <h4>ISR bloqueado</h4>
+            <p>Para habilitar esta pestaña, primero debes presionar <b>“Guardar datos”</b> en Liquidación.</p>
+            <p class="mini">Así se evita mostrar cálculos antes de registrar la información.</p>
+            <div class="btnRow">
+              <button type="button" id="isrGoSaveBtn" class="btnSave">Ir a Guardar</button>
+            </div>
+          </div>
+        </div>
+
       </div><!-- /lockAreaISR -->
+
     </div><!-- /isrTab -->
 
   </div><!-- /app -->
@@ -526,76 +685,142 @@
   (() => {
     const $ = (id) => document.getElementById(id);
 
+    // ✅ TU URL (Apps Script Web App)
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbw8E8-TtFUluI-HrTKWvued64YB-rg9ukbM_JOugKH0AIILrUr4Ozouo0KyMSg_Uk1r/exec";
+    // ✅ TU SITE KEY reCAPTCHA v3
     const RECAPTCHA_SITE_KEY = "6LdCsmksAAAAAAUeNIkarO3JBuYdK_ekJHcVXLdq";
+
     const pageLoadTs = Date.now();
 
-    // ====== LOCK STATE (estricto: siempre inicia bloqueado y NO persiste) ======
-    let isUnlocked = false;
+    // ========= Lock State =========
+    const LOCK_KEY = "liqgt_unlocked_v1";
 
-    function setLockedState(locked){
+    function setLockedState(isLocked){
       const liq = $("lockAreaLiq");
       const isr = $("lockAreaISR");
-      if(liq){
-        if(locked) liq.classList.add("locked");
-        else liq.classList.remove("locked");
-      }
-      if(isr){
-        if(locked) isr.classList.add("locked");
-        else isr.classList.remove("locked");
-      }
-      isUnlocked = !locked;
+      if(liq) liq.classList.toggle("locked", isLocked);
+      if(isr) isr.classList.toggle("locked", isLocked);
 
-      // también bloquea UI del tab ISR (para que no “entre”)
-      const isrBtn = document.querySelector('.tabbtn[data-tab="isrTab"]');
-      if(isrBtn){
-        if(locked){
-          isrBtn.style.opacity = "0.6";
-          isrBtn.style.pointerEvents = "none";
-        } else {
-          isrBtn.style.opacity = "";
-          isrBtn.style.pointerEvents = "";
-        }
+      // ISR tab button
+      const tabIsr = $("tabIsrBtn");
+      if(tabIsr){
+        tabIsr.disabled = isLocked;
+        tabIsr.classList.toggle("lockedTab", isLocked);
+        tabIsr.title = isLocked ? "Guarda los datos para habilitar ISR" : "";
       }
 
-      // PDF ISR solo si desbloqueado y en tab ISR
+      // ISR PDF button visibility
       toggleISRPdfButton();
+
+      if(!isLocked){
+        sessionStorage.setItem(LOCK_KEY, "1");
+      } else {
+        sessionStorage.removeItem(LOCK_KEY);
+      }
+    }
+
+    function isUnlocked(){
+      return sessionStorage.getItem(LOCK_KEY) === "1";
     }
 
     function toggleISRPdfButton(){
       const isrTabActive = document.getElementById("isrTab").classList.contains("active");
       const wrap = $("isrPdfWrap");
-      if(!wrap) return;
-      wrap.style.display = (isUnlocked && isrTabActive) ? "" : "none";
+      if(wrap) wrap.style.display = (isrTabActive && isUnlocked()) ? "" : "none";
     }
 
-    function validateRequired(){
-      const requiredIds = ["correo","nombre","ingreso","baja","salarioMensual"];
+    // ========= Toast =========
+    let toastTimer = null;
+    function showToast(title, desc, ms=2600){
+      const t = $("toast");
+      if(!t) return;
+      $("toastTitle").textContent = title || "Listo ✅";
+      $("toastDesc").textContent  = desc  || "";
+      t.classList.add("show");
+      if(toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>{ t.classList.remove("show"); }, ms);
+    }
+
+    // ========= Button state (Guardar) =========
+    function setSaveButtonsState(state){
+      // state: "idle" | "saving" | "saved"
+      const btns = [ $("saveSheetsBtn"), $("saveSheetsBtn_m"), $("lockSaveBtn") ].filter(Boolean);
+
+      if(state === "idle"){
+        btns.forEach(b=>{
+          b.disabled = false;
+          b.classList.remove("btnSaved");
+          b.classList.add("btnSave");
+          b.textContent = (b.id === "saveSheetsBtn") ? "Guardar datos (Google Sheet)" :
+                          (b.id === "saveSheetsBtn_m") ? "Guardar datos" :
+                          "Guardar datos";
+        });
+      }
+
+      if(state === "saving"){
+        btns.forEach(b=>{
+          b.disabled = true;
+          b.textContent = "Guardando...";
+        });
+      }
+
+      if(state === "saved"){
+        btns.forEach(b=>{
+          b.disabled = false; // si quieres que NO permita re-guardar, cámbialo a true
+          b.classList.remove("btnSave");
+          b.classList.add("btnSaved");
+          b.textContent = "✓ Datos guardados";
+        });
+
+        // opcional: regresar a estado normal después de unos segundos
+        setTimeout(()=>{
+          // si ya está desbloqueado, dejamos el texto "guardado" un ratito y volvemos a normal
+          // si prefieres que se quede permanente, comenta estas 3 líneas:
+          // setSaveButtonsState("idle");
+        }, 5000);
+      }
+    }
+
+    // ========= Required fields =========
+    function clearReqErrors(){
+      ["correo","nombre","ingreso","baja","salarioMensual"].forEach(id=>{
+        const el = $(id);
+        if(el) el.classList.remove("reqError");
+      });
+    }
+
+    function markReqError(id){
+      const el = $(id);
+      if(el) el.classList.add("reqError");
+    }
+
+    function validateRequiredStrict(){
+      clearReqErrors();
+
+      const correo = ($("correo").value || "").trim();
+      const nombre = ($("nombre").value || "").trim();
+      const ingreso = ($("ingreso").value || "").trim();
+      const baja = ($("baja").value || "").trim();
+      const salario = num($("salarioMensual").value);
+
       let ok = true;
 
-      requiredIds.forEach(id=>{
-        const el = $(id);
-        if(!el) return;
-        el.classList.remove("reqError");
-        const val = (el.value || "").trim();
-        if(!val){
-          ok = false;
-          el.classList.add("reqError");
-        }
-      });
+      if(!isValidEmail(correo)){ ok=false; markReqError("correo"); }
+      if(!nombre){ ok=false; markReqError("nombre"); }
+      if(!ingreso){ ok=false; markReqError("ingreso"); }
+      if(!baja){ ok=false; markReqError("baja"); }
+      if(!(salario > 0)){ ok=false; markReqError("salarioMensual"); }
 
-      const email = ($("correo").value || "").trim();
-      if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-        ok = false;
-        $("correo").classList.add("reqError");
-      }
-
-      if(!ok){
-        alert("Completa los campos requeridos: correo, nombre, ingreso, baja y salario.");
-      }
       return ok;
     }
 
+    // ========= Welcome =========
+    function hideWelcome(){
+      const w = $("welcomeMsg");
+      if(w) w.style.display="none";
+    }
+
+    // ========= Error handler =========
     window.onerror = function(message, source, lineno, colno, error) {
       const box = $("errBox");
       box.style.display = "block";
@@ -1088,12 +1313,6 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     }
 
     function savePDFResumenLiquidacion(){
-      // ✅ estricto: no PDF antes de guardar
-      if(!isUnlocked){
-        alert("Primero debes Guardar datos para generar el PDF.");
-        return;
-      }
-
       const r = calc();
       if(!r) return;
 
@@ -1376,12 +1595,6 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     }
 
     function savePDFResumenISR(){
-      // ✅ estricto: no PDF ISR antes de guardar y antes de desbloquear ISR
-      if(!isUnlocked){
-        alert("Primero debes Guardar datos para generar el PDF de ISR.");
-        return;
-      }
-
       const liq = calc();
       if(!liq) return;
 
@@ -1408,12 +1621,6 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
       doc.setFont("helvetica","normal");
       doc.setFontSize(10);
-
-      const pdfText = (doc, text, x, y, maxWidth) => {
-        const lines = doc.splitTextToSize(String(text ?? ""), maxWidth);
-        doc.text(lines, x, y);
-        return y + (lines.length * 6);
-      };
 
       y = pdfText(doc, `Correo: ${$("correo").value || "-"}`, margin, y, maxW);
       y = pdfText(doc, `Nombre: ${$("nombre").value || "-"}`, margin, y, maxW);
@@ -1505,7 +1712,7 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     }
 
     // =========================
-    // ✅ CAPTURA A GOOGLE SHEETS
+    // ✅ CAPTURA A GOOGLE SHEETS (con reCAPTCHA v3)
     // =========================
     function isValidEmail(email){
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||"").trim());
@@ -1524,15 +1731,15 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
     async function guardarEnGoogleSheets(){
       const r = calc();
-      if(!r) return false;
+      if(!r) return;
 
-      if(!validateRequired()) return false;
-
-      const correo = ($("correo").value || "").trim();
-      if(!isValidEmail(correo)){
-        alert("Correo inválido.");
-        return false;
+      // 🔒 Validación estricta antes de guardar
+      if(!validateRequiredStrict()){
+        showToast("Faltan datos", "Completa correo, nombre, fechas y salario mensual.", 3000);
+        return;
       }
+
+      setSaveButtonsState("saving");
 
       const deltaSeconds = Math.round((Date.now() - pageLoadTs) / 1000);
       const hp = "";
@@ -1544,13 +1751,14 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
         recaptchaToken = await getRecaptchaToken(recaptchaAction);
       } catch (e) {
         console.log("reCAPTCHA error:", e);
-        alert("No se pudo validar reCAPTCHA. Intenta de nuevo.");
-        return false;
+        setSaveButtonsState("idle");
+        showToast("No se pudo validar", "reCAPTCHA falló. Intenta de nuevo.", 3200);
+        return;
       }
 
       const payload = {
-        correo,
-        nombre: $("nombre").value || "",
+        correo: ($("correo").value || "").trim(),
+        nombre: ($("nombre").value || "").trim(),
         fechaIngreso: $("ingreso").value || "",
         fechaBaja: $("baja").value || "",
         sueldo: r.salarioMensual,
@@ -1558,11 +1766,13 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
         bono14: r.bono14,
         vacaciones: r.vacPago,
         indemnizacion: r.indemnizacion,
+
         hp,
         deltaSeconds,
         ua: navigator.userAgent || "",
         origin: location.origin || "",
         referer: document.referrer || "",
+
         recaptchaToken,
         recaptchaAction
       };
@@ -1580,24 +1790,31 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
         if(!res.ok || !out || !out.ok){
           console.log("HTTP:", res.status, "Respuesta:", text);
-          alert("No se pudo guardar. El servidor rechazó la solicitud.");
-          return false;
+          setSaveButtonsState("idle");
+          showToast("No se pudo guardar", "El servidor rechazó la solicitud.", 3200);
+          return;
         }
 
-        alert("Datos guardados ✅");
-        setLockedState(false); // ✅ desbloquea TODO
-        return true;
+        // ✅ Guardó: desbloquear y feedback visual
+        setSaveButtonsState("saved");
+        showToast("Guardado ✅", "Datos registrados. Cálculos desbloqueados.", 2600);
+
+        setLockedState(false);
+        hideWelcome();
+
+        // (Re)render: ahora sí se ven
+        renderMonthsTable();
+        renderISRTable();
+        renderAll();
 
       } catch (e) {
         console.log("Fetch error:", e);
-        alert("No se pudo guardar. Revisa tu conexión o el Apps Script.");
-        return false;
+        setSaveButtonsState("idle");
+        showToast("Error de conexión", "Revisa tu internet o Apps Script.", 3200);
       }
     }
 
-    // INIT (siempre bloqueado)
-    setLockedState(true);
-
+    // INIT
     buildMonthsList();
     renderMonthsTable();
 
@@ -1637,37 +1854,32 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
     // Botones
     $("recalcBtn").addEventListener("click", () => renderAll());
+    $("recalcBtn_m").addEventListener("click", () => renderAll());
+
     $("clearEditableBtn").addEventListener("click", clearEditableMonths);
     $("csvBtn").addEventListener("click", downloadCSV);
     $("xlsxBtn").addEventListener("click", exportExcel);
     $("printBtn").addEventListener("click", () => window.print());
-
     $("pdfLiqBtn").addEventListener("click", savePDFResumenLiquidacion);
     $("pdfIsrBtn").addEventListener("click", savePDFResumenISR);
 
     $("saveSheetsBtn").addEventListener("click", guardarEnGoogleSheets);
-
-    // Overlay buttons (ambos llaman a guardar)
+    $("saveSheetsBtn_m").addEventListener("click", guardarEnGoogleSheets);
     $("lockSaveBtn").addEventListener("click", guardarEnGoogleSheets);
-    $("lockSaveBtnISR").addEventListener("click", guardarEnGoogleSheets);
 
-    // Mobile footer
-    $("mfSaveBtn").addEventListener("click", guardarEnGoogleSheets);
-    $("mfPDFBtn").addEventListener("click", savePDFResumenLiquidacion);
-
-    $("mfTabLiq").addEventListener("click", ()=>{
-      document.querySelector('.tabbtn[data-tab="liqTab"]').click();
+    // Lock overlay helpers
+    $("lockCloseWelcomeBtn").addEventListener("click", hideWelcome);
+    $("isrGoSaveBtn").addEventListener("click", ()=>{
+      // ir a tab liquidación
+      document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".tabpanel").forEach(p=>p.classList.remove("active"));
+      $("tabLiqBtn").classList.add("active");
+      $("liqTab").classList.add("active");
+      toggleISRPdfButton();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    $("mfTabISR").addEventListener("click", async ()=>{
-      if(!isUnlocked){
-        alert("Primero debes Guardar datos para acceder a ISR.");
-        return;
-      }
-      document.querySelector('.tabbtn[data-tab="isrTab"]').click();
-    });
-
-    // Inputs (siguen recalculando internamente, pero UI seguirá bloqueado hasta guardar)
+    // Inputs (siguen recalculando, pero mientras locked no se verá)
     ["correo","nombre","ingreso","baja","vacGozadas","hePend","otrosDesc"].forEach(id=>{
       $(id).addEventListener("input", ()=>{ renderAll(); });
       $(id).addEventListener("change", ()=>{
@@ -1689,13 +1901,13 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     $("indemPct").addEventListener("input", ()=>renderAll());
     $("indemPct").addEventListener("change", ()=>renderAll());
 
-    // Tabs
+    // Tabs (ISR bloqueado hasta guardar)
     document.querySelectorAll(".tabbtn").forEach(btn=>{
-      btn.addEventListener("click", (ev)=>{
+      btn.addEventListener("click", ()=>{
         const id = btn.getAttribute("data-tab");
-        if(id === "isrTab" && !isUnlocked){
-          ev.preventDefault();
-          alert("Primero debes Guardar datos para acceder a ISR.");
+
+        if(id === "isrTab" && !isUnlocked()){
+          showToast("ISR bloqueado", "Primero presiona “Guardar datos”.", 2600);
           return;
         }
 
@@ -1709,6 +1921,19 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
         toggleISRPdfButton();
       });
     });
+
+    // Welcome close
+    $("closeWelcomeBtn").addEventListener("click", hideWelcome);
+
+    // Initial lock state based on session
+    if(isUnlocked()){
+      setLockedState(false);
+      hideWelcome();
+      setSaveButtonsState("saved"); // opcional
+    } else {
+      setLockedState(true);
+      setSaveButtonsState("idle");
+    }
 
     recalcSalarioDiario();
     renderAll();
