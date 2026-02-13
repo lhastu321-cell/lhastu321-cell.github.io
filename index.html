@@ -1342,10 +1342,22 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
       try {
         const res = await fetch(SHEETS_URL, {
-          method: "POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify(payload)
-        });
+  method: "POST",
+  headers: { "Content-Type": "text/plain;charset=utf-8" },
+  body: JSON.stringify(payload)
+});
+
+const text = await res.text();
+let out = null;
+try { out = JSON.parse(text); } catch(e) {}
+
+if(!res.ok || !out || !out.ok){
+  console.log("HTTP:", res.status, "Respuesta:", text);
+  alert("No se pudo guardar. El servidor rechazó la solicitud.");
+  return;
+}
+
+alert("Datos guardados ✅");
 
         const out = await res.json().catch(() => null);
 
