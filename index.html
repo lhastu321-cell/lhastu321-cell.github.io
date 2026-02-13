@@ -70,33 +70,112 @@
     /* Tabla ISR */
     .isrTableWrap{overflow:auto; max-height: 420px;}
 
-   /* ====== Mobile first tweaks ====== */
-@media (max-width: 900px){
-  body{ margin:14px; }
-  .card{ padding:12px; }
-  .grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
-  .row{ gap:8px; }
-  button{ width:100%; }
-  .right{ margin-left:0; width:100%; }
-  .tabs{ width:100%; }
-  .tabbtn{ flex:1; }
-}
+    /* ====== Mobile first tweaks ====== */
+    @media (max-width: 900px){
+      body{ margin:14px; }
+      .card{ padding:12px; }
+      .grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+      .row{ gap:8px; }
+      button{ width:100%; }
+      .right{ margin-left:0; width:100%; }
+      .tabs{ width:100%; }
+      .tabbtn{ flex:1; }
+    }
 
-@media (max-width: 520px){
-  .grid{ grid-template-columns:1fr; }
-  input,select,button{ font-size:16px; }
-  .checkrow{ align-items:flex-start; }
-  .checkrow input[type="checkbox"]{ margin-top:3px; }
-}
+    @media (max-width: 520px){
+      .grid{ grid-template-columns:1fr; }
+      input,select,button{ font-size:16px; }
+      .checkrow{ align-items:flex-start; }
+      .checkrow input[type="checkbox"]{ margin-top:3px; }
+    }
 
-table{ width:100%; }
-.panel > div[style*="overflow:auto"], .isrTableWrap{
-  -webkit-overflow-scrolling: touch;
-}
+    table{ width:100%; }
+    .panel > div[style*="overflow:auto"], .isrTableWrap{
+      -webkit-overflow-scrolling: touch;
+    }
 
-th, td{ white-space:nowrap; }
-th:first-child, td:first-child{ white-space:normal; }
- 
+    th, td{ white-space:nowrap; }
+    th:first-child, td:first-child{ white-space:normal; }
+
+    /* ====== Mobile "app-like" footer ====== */
+    .mobileFooter{
+      display:none;
+      position:sticky;
+      bottom:0;
+      left:0;
+      right:0;
+      background:#ffffffd9;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top:1px solid #e9e9e9;
+      padding:10px;
+      z-index:50;
+    }
+
+    .mobileFooter .mfRow{
+      display:flex;
+      gap:8px;
+    }
+
+    .mobileFooter button{
+      flex:1;
+      width:auto;
+    }
+
+    @media (max-width: 900px){
+      #topActions{ display:none; }
+      .mobileFooter{ display:block; }
+    }
+
+    /* ====== Lock/Blur until user saves ====== */
+    .lockWrap{ position:relative; }
+
+    .locked .blurTarget{
+      filter: blur(10px);
+      -webkit-filter: blur(10px);
+      pointer-events:none;
+      user-select:none;
+    }
+
+    .locked .lockOverlay{ display:flex; }
+
+    .lockOverlay{
+      display:none;
+      position:absolute;
+      inset:0;
+      z-index:40;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+    }
+
+    .lockOverlay .lockCard{
+      max-width:520px;
+      width:100%;
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:14px;
+      padding:14px;
+      box-shadow:0 10px 30px rgba(0,0,0,.08);
+    }
+
+    .lockOverlay .lockCard h4{ margin:0 0 8px; font-size:14px; }
+    .lockOverlay .lockCard p{ margin:0 0 10px; font-size:13px; color:#555; line-height:1.35; }
+    .lockOverlay .lockCard .mini{ font-size:12px; color:#666; }
+
+    .lockOverlay .lockCard .btnRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .lockOverlay .lockCard .btnRow button{ flex:1; }
+
+    .reqError{
+      border-color:#ff6b6b !important;
+      box-shadow:0 0 0 3px rgba(255,107,107,.15);
+    }
   </style>
 </head>
 
@@ -104,6 +183,18 @@ th:first-child, td:first-child{ white-space:normal; }
   <h2>Calculadora de Liquidación Laboral (Guatemala)</h2>
 
   <div class="card" id="app">
+
+    <!-- Footer móvil -->
+    <div class="mobileFooter print-hide">
+      <div class="mfRow">
+        <button id="mfSaveBtn" type="button">Guardar datos</button>
+        <button id="mfPDFBtn" type="button">PDF (Liquidación)</button>
+      </div>
+      <div class="mfRow" style="margin-top:8px;">
+        <button id="mfTabLiq" type="button">Liquidación</button>
+        <button id="mfTabISR" type="button">ISR</button>
+      </div>
+    </div>
 
     <div class="tabs print-hide">
       <button type="button" class="tabbtn active" data-tab="liqTab">Liquidación</button>
@@ -210,53 +301,73 @@ th:first-child, td:first-child{ white-space:normal; }
 
       <div id="errBox" class="error"></div>
 
-      <div class="panel">
-        <h3>Ingresos últimos 12 meses completos (editable)</h3>
-        <div class="muted">(Se arma desde el mes anterior a la baja hacia atrás)</div>
-        <div style="overflow:auto; max-height: 420px;">
-          <table id="tabla12">
-            <thead>
-              <tr>
-                <th>Mes</th>
-                <th>Ordinario</th>
-                <th>Extraordinario</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h3>Resumen</h3>
-        <div class="twoCol">
-          <div class="summaryBlock">
-            <div class="summaryTitle">INGRESOS</div>
-            <div class="summaryRows" id="ingresosRows"></div>
-          </div>
-          <div class="summaryBlock">
-            <div class="summaryTitle">DESCUENTOS</div>
-            <div class="summaryRows" id="descuentosRows"></div>
+      <!-- ✅ LOCK AREA (Liqui) -->
+      <div id="lockAreaLiq" class="lockWrap locked">
+        <div class="lockOverlay">
+          <div class="lockCard">
+            <h4>Vista previa protegida</h4>
+            <p>
+              Para ver los cálculos, completa los datos y presiona <b>Guardar datos (Google Sheet)</b>.
+            </p>
+            <div class="mini">
+              Esto ayuda a reducir spam/bots y a registrar el uso (correo + resumen).
+            </div>
+            <div class="btnRow">
+              <button id="lockSaveBtn" type="button">Guardar datos</button>
+            </div>
           </div>
         </div>
 
-        <div class="summaryGrid" style="margin-top:10px;">
-          <div class="summaryRow neto">
-            <strong>NETO</strong>
-            <span id="netoVal">Q 0.00</span>
+        <div class="blurTarget">
+          <div class="panel">
+            <h3>Ingresos últimos 12 meses completos (editable)</h3>
+            <div class="muted">(Se arma desde el mes anterior a la baja hacia atrás)</div>
+            <div style="overflow:auto; max-height: 420px;">
+              <table id="tabla12">
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    <th>Ordinario</th>
+                    <th>Extraordinario</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <div class="warn muted print-hide" style="margin-top:10px;">
-          IGSS (4.83%): solo si hay sueldo u horas extra pendientes.<br>
-          HE pendientes: (Salario mensual/30/8) * 1.5 * horas.
-        </div>
-      </div>
+          <div class="panel">
+            <h3>Resumen</h3>
+            <div class="twoCol">
+              <div class="summaryBlock">
+                <div class="summaryTitle">INGRESOS</div>
+                <div class="summaryRows" id="ingresosRows"></div>
+              </div>
+              <div class="summaryBlock">
+                <div class="summaryTitle">DESCUENTOS</div>
+                <div class="summaryRows" id="descuentosRows"></div>
+              </div>
+            </div>
 
-      <div class="panel print-hide">
-        <h3>Detalle de cálculo</h3>
-        <div id="breakdowns" class="break"></div>
-      </div>
+            <div class="summaryGrid" style="margin-top:10px;">
+              <div class="summaryRow neto">
+                <strong>NETO</strong>
+                <span id="netoVal">Q 0.00</span>
+              </div>
+            </div>
+
+            <div class="warn muted print-hide" style="margin-top:10px;">
+              IGSS (4.83%): solo si hay sueldo u horas extra pendientes.<br>
+              HE pendientes: (Salario mensual/30/8) * 1.5 * horas.
+            </div>
+          </div>
+
+          <div class="panel print-hide">
+            <h3>Detalle de cálculo</h3>
+            <div id="breakdowns" class="break"></div>
+          </div>
+        </div><!-- /blurTarget -->
+      </div><!-- /lockAreaLiq -->
 
     </div><!-- /liqTab -->
 
@@ -265,128 +376,144 @@ th:first-child, td:first-child{ white-space:normal; }
          ========================= -->
     <div id="isrTab" class="tabpanel">
 
-      <div class="panel">
-        <h3>ISR – Ingresos del año en curso (anclado a la fecha de baja)</h3>
-        <div class="muted">Meses de enero a mes de baja (editable). Bono incentivo por default: Q 250.00</div>
-
-        <div class="isrTableWrap">
-          <table id="tablaISR">
-            <thead>
-              <tr>
-                <th>Mes</th>
-                <th>Salario</th>
-                <th>Bono incentivo</th>
-                <th>Horas Extra</th>
-                <th>Otros</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-            <tfoot>
-              <tr>
-                <th style="text-align:left">TOTAL</th>
-                <th id="isrTotSal">0</th>
-                <th id="isrTotBon">0</th>
-                <th id="isrTotHE">0</th>
-                <th id="isrTotOtr">0</th>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h3>Ingresos adicionales</h3>
-
-        <div class="grid" style="grid-template-columns:repeat(4,minmax(190px,1fr));">
-          <div>
-            <label>Aguinaldo (editable)</label>
-            <input id="isrAgu" type="text" inputmode="decimal" value="0">
-          </div>
-          <div>
-            <label>Aguinaldo liquidación (auto)</label>
-            <input id="isrAguLiq" type="text" class="readonly" readonly value="0">
-          </div>
-          <div>
-            <label>Bono 14 (editable)</label>
-            <input id="isrB14" type="text" inputmode="decimal" value="0">
-          </div>
-          <div>
-            <label>Bono 14 liquidación (auto)</label>
-            <input id="isrB14Liq" type="text" class="readonly" readonly value="0">
+      <!-- ✅ LOCK AREA (ISR) -->
+      <div id="lockAreaISR" class="lockWrap locked">
+        <div class="lockOverlay">
+          <div class="lockCard">
+            <h4>ISR protegido</h4>
+            <p>
+              Para acceder a la pestaña ISR, primero debes presionar <b>Guardar datos (Google Sheet)</b>.
+            </p>
+            <div class="btnRow">
+              <button id="lockSaveBtnISR" type="button">Guardar datos</button>
+            </div>
           </div>
         </div>
 
-        <div class="row" style="margin-top:10px;">
-          <div class="right" style="text-align:right;">
-            <div class="muted">Subtotal de ingresos (ISR)</div>
-            <div style="font-size:18px;font-weight:800;" id="isrIngTotal">Q 0.00</div>
-          </div>
-        </div>
-      </div>
+        <div class="blurTarget">
+          <div class="panel">
+            <h3>ISR – Ingresos del año en curso (anclado a la fecha de baja)</h3>
+            <div class="muted">Meses de enero a mes de baja (editable). Bono incentivo por default: Q 250.00</div>
 
-      <div class="panel" style="margin-top:12px;">
-        <h3>Deducibles</h3>
-
-        <div class="summaryRows">
-          <div class="summaryRow">
-            <span>IGSS (ISR)</span>
-            <span id="isrIGSSVal">Q 0.00</span>
-          </div>
-
-          <div class="summaryRow">
-            <span>Aguinaldo (total)</span>
-            <span id="isrDedAgu">Q 0.00</span>
-          </div>
-
-          <div class="summaryRow">
-            <span>Bono 14 (total)</span>
-            <span id="isrDedB14">Q 0.00</span>
-          </div>
-
-          <div class="summaryRow">
-            <span>Deducible fijo</span>
-            <span id="isrDedLey">Q 48,000.00</span>
+            <div class="isrTableWrap">
+              <table id="tablaISR">
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    <th>Salario</th>
+                    <th>Bono incentivo</th>
+                    <th>Horas Extra</th>
+                    <th>Otros</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                  <tr>
+                    <th style="text-align:left">TOTAL</th>
+                    <th id="isrTotSal">0</th>
+                    <th id="isrTotBon">0</th>
+                    <th id="isrTotHE">0</th>
+                    <th id="isrTotOtr">0</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
 
-          <div class="summaryRow total">
-            <strong>Total deducibles</strong>
-            <span id="isrDedTotal">Q 0.00</span>
-          </div>
-        </div>
+          <div class="panel">
+            <h3>Ingresos adicionales</h3>
 
-        <div class="row" style="margin-top:10px;">
-          <div class="right" style="text-align:right;">
-            <div class="muted">Renta Neta</div>
-            <div style="font-size:18px;font-weight:800;" id="isrRentaNeta">Q 0.00</div>
-          </div>
-        </div>
+            <div class="grid" style="grid-template-columns:repeat(4,minmax(190px,1fr));">
+              <div>
+                <label>Aguinaldo (editable)</label>
+                <input id="isrAgu" type="text" inputmode="decimal" value="0">
+              </div>
+              <div>
+                <label>Aguinaldo liquidación (auto)</label>
+                <input id="isrAguLiq" type="text" class="readonly" readonly value="0">
+              </div>
+              <div>
+                <label>Bono 14 (editable)</label>
+                <input id="isrB14" type="text" inputmode="decimal" value="0">
+              </div>
+              <div>
+                <label>Bono 14 liquidación (auto)</label>
+                <input id="isrB14Liq" type="text" class="readonly" readonly value="0">
+              </div>
+            </div>
 
-        <div class="row" style="margin-top:10px;">
-          <div class="right" style="text-align:right;">
-            <div class="muted">Impuesto Determinado</div>
-            <div style="font-size:18px;font-weight:800;" id="isrImpDet">Q 0.00</div>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px; align-items:flex-end;">
-          <div class="checkrow" style="flex:1;">
-            <input id="chkRetenido" type="checkbox">
-            <div style="width:100%;">
-              <div style="font-size:13px;"><b>Ingresar total retenido en el año</b></div>
-              <div class="muted">Habilita el campo para comparar vs Impuesto Determinado.</div>
-              <div style="margin-top:8px;">
-                <input id="isrRetenido" type="text" inputmode="decimal" class="readonly" readonly value="0">
+            <div class="row" style="margin-top:10px;">
+              <div class="right" style="text-align:right;">
+                <div class="muted">Subtotal de ingresos (ISR)</div>
+                <div style="font-size:18px;font-weight:800;" id="isrIngTotal">Q 0.00</div>
               </div>
             </div>
           </div>
 
-          <div class="right" style="min-width:260px;text-align:right;">
-            <div class="muted" id="isrDiffLabel">Diferencia</div>
-            <div style="font-size:18px;font-weight:800;" id="isrDiffVal">Q 0.00</div>
-          </div>
-        </div>
-      </div>
+          <div class="panel" style="margin-top:12px;">
+            <h3>Deducibles</h3>
 
+            <div class="summaryRows">
+              <div class="summaryRow">
+                <span>IGSS (ISR)</span>
+                <span id="isrIGSSVal">Q 0.00</span>
+              </div>
+
+              <div class="summaryRow">
+                <span>Aguinaldo (total)</span>
+                <span id="isrDedAgu">Q 0.00</span>
+              </div>
+
+              <div class="summaryRow">
+                <span>Bono 14 (total)</span>
+                <span id="isrDedB14">Q 0.00</span>
+              </div>
+
+              <div class="summaryRow">
+                <span>Deducible fijo</span>
+                <span id="isrDedLey">Q 48,000.00</span>
+              </div>
+
+              <div class="summaryRow total">
+                <strong>Total deducibles</strong>
+                <span id="isrDedTotal">Q 0.00</span>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div class="right" style="text-align:right;">
+                <div class="muted">Renta Neta</div>
+                <div style="font-size:18px;font-weight:800;" id="isrRentaNeta">Q 0.00</div>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div class="right" style="text-align:right;">
+                <div class="muted">Impuesto Determinado</div>
+                <div style="font-size:18px;font-weight:800;" id="isrImpDet">Q 0.00</div>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px; align-items:flex-end;">
+              <div class="checkrow" style="flex:1;">
+                <input id="chkRetenido" type="checkbox">
+                <div style="width:100%;">
+                  <div style="font-size:13px;"><b>Ingresar total retenido en el año</b></div>
+                  <div class="muted">Habilita el campo para comparar vs Impuesto Determinado.</div>
+                  <div style="margin-top:8px;">
+                    <input id="isrRetenido" type="text" inputmode="decimal" class="readonly" readonly value="0">
+                  </div>
+                </div>
+              </div>
+
+              <div class="right" style="min-width:260px;text-align:right;">
+                <div class="muted" id="isrDiffLabel">Diferencia</div>
+                <div style="font-size:18px;font-weight:800;" id="isrDiffVal">Q 0.00</div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /blurTarget -->
+      </div><!-- /lockAreaISR -->
     </div><!-- /isrTab -->
 
   </div><!-- /app -->
@@ -399,18 +526,74 @@ th:first-child, td:first-child{ white-space:normal; }
   (() => {
     const $ = (id) => document.getElementById(id);
 
-    // ✅ TU URL (Apps Script Web App)
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbw8E8-TtFUluI-HrTKWvued64YB-rg9ukbM_JOugKH0AIILrUr4Ozouo0KyMSg_Uk1r/exec";
-
-    // ✅ TU SITE KEY reCAPTCHA v3
     const RECAPTCHA_SITE_KEY = "6LdCsmksAAAAAAUeNIkarO3JBuYdK_ekJHcVXLdq";
-
     const pageLoadTs = Date.now();
+
+    // ====== LOCK STATE (estricto: siempre inicia bloqueado y NO persiste) ======
+    let isUnlocked = false;
+
+    function setLockedState(locked){
+      const liq = $("lockAreaLiq");
+      const isr = $("lockAreaISR");
+      if(liq){
+        if(locked) liq.classList.add("locked");
+        else liq.classList.remove("locked");
+      }
+      if(isr){
+        if(locked) isr.classList.add("locked");
+        else isr.classList.remove("locked");
+      }
+      isUnlocked = !locked;
+
+      // también bloquea UI del tab ISR (para que no “entre”)
+      const isrBtn = document.querySelector('.tabbtn[data-tab="isrTab"]');
+      if(isrBtn){
+        if(locked){
+          isrBtn.style.opacity = "0.6";
+          isrBtn.style.pointerEvents = "none";
+        } else {
+          isrBtn.style.opacity = "";
+          isrBtn.style.pointerEvents = "";
+        }
+      }
+
+      // PDF ISR solo si desbloqueado y en tab ISR
+      toggleISRPdfButton();
+    }
 
     function toggleISRPdfButton(){
       const isrTabActive = document.getElementById("isrTab").classList.contains("active");
       const wrap = $("isrPdfWrap");
-      if(wrap) wrap.style.display = isrTabActive ? "" : "none";
+      if(!wrap) return;
+      wrap.style.display = (isUnlocked && isrTabActive) ? "" : "none";
+    }
+
+    function validateRequired(){
+      const requiredIds = ["correo","nombre","ingreso","baja","salarioMensual"];
+      let ok = true;
+
+      requiredIds.forEach(id=>{
+        const el = $(id);
+        if(!el) return;
+        el.classList.remove("reqError");
+        const val = (el.value || "").trim();
+        if(!val){
+          ok = false;
+          el.classList.add("reqError");
+        }
+      });
+
+      const email = ($("correo").value || "").trim();
+      if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        ok = false;
+        $("correo").classList.add("reqError");
+      }
+
+      if(!ok){
+        alert("Completa los campos requeridos: correo, nombre, ingreso, baja y salario.");
+      }
+      return ok;
     }
 
     window.onerror = function(message, source, lineno, colno, error) {
@@ -905,6 +1088,12 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     }
 
     function savePDFResumenLiquidacion(){
+      // ✅ estricto: no PDF antes de guardar
+      if(!isUnlocked){
+        alert("Primero debes Guardar datos para generar el PDF.");
+        return;
+      }
+
       const r = calc();
       if(!r) return;
 
@@ -1187,6 +1376,12 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     }
 
     function savePDFResumenISR(){
+      // ✅ estricto: no PDF ISR antes de guardar y antes de desbloquear ISR
+      if(!isUnlocked){
+        alert("Primero debes Guardar datos para generar el PDF de ISR.");
+        return;
+      }
+
       const liq = calc();
       if(!liq) return;
 
@@ -1213,6 +1408,12 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
       doc.setFont("helvetica","normal");
       doc.setFontSize(10);
+
+      const pdfText = (doc, text, x, y, maxWidth) => {
+        const lines = doc.splitTextToSize(String(text ?? ""), maxWidth);
+        doc.text(lines, x, y);
+        return y + (lines.length * 6);
+      };
 
       y = pdfText(doc, `Correo: ${$("correo").value || "-"}`, margin, y, maxW);
       y = pdfText(doc, `Nombre: ${$("nombre").value || "-"}`, margin, y, maxW);
@@ -1304,7 +1505,7 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     }
 
     // =========================
-    // ✅ CAPTURA A GOOGLE SHEETS (con reCAPTCHA v3)
+    // ✅ CAPTURA A GOOGLE SHEETS
     // =========================
     function isValidEmail(email){
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||"").trim());
@@ -1323,16 +1524,18 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
     async function guardarEnGoogleSheets(){
       const r = calc();
-      if(!r) return;
+      if(!r) return false;
+
+      if(!validateRequired()) return false;
 
       const correo = ($("correo").value || "").trim();
       if(!isValidEmail(correo)){
         alert("Correo inválido.");
-        return;
+        return false;
       }
 
       const deltaSeconds = Math.round((Date.now() - pageLoadTs) / 1000);
-      const hp = ""; // honeypot (si luego quieres, te pongo un input hidden)
+      const hp = "";
 
       const recaptchaAction = "lead_submit";
       let recaptchaToken = "";
@@ -1342,7 +1545,7 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
       } catch (e) {
         console.log("reCAPTCHA error:", e);
         alert("No se pudo validar reCAPTCHA. Intenta de nuevo.");
-        return;
+        return false;
       }
 
       const payload = {
@@ -1355,15 +1558,11 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
         bono14: r.bono14,
         vacaciones: r.vacPago,
         indemnizacion: r.indemnizacion,
-
-        // Anti-spam básico
         hp,
         deltaSeconds,
         ua: navigator.userAgent || "",
         origin: location.origin || "",
         referer: document.referrer || "",
-
-        // reCAPTCHA
         recaptchaToken,
         recaptchaAction
       };
@@ -1382,17 +1581,23 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
         if(!res.ok || !out || !out.ok){
           console.log("HTTP:", res.status, "Respuesta:", text);
           alert("No se pudo guardar. El servidor rechazó la solicitud.");
-          return;
+          return false;
         }
 
         alert("Datos guardados ✅");
+        setLockedState(false); // ✅ desbloquea TODO
+        return true;
+
       } catch (e) {
         console.log("Fetch error:", e);
         alert("No se pudo guardar. Revisa tu conexión o el Apps Script.");
+        return false;
       }
     }
 
-    // INIT
+    // INIT (siempre bloqueado)
+    setLockedState(true);
+
     buildMonthsList();
     renderMonthsTable();
 
@@ -1436,11 +1641,33 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     $("csvBtn").addEventListener("click", downloadCSV);
     $("xlsxBtn").addEventListener("click", exportExcel);
     $("printBtn").addEventListener("click", () => window.print());
+
     $("pdfLiqBtn").addEventListener("click", savePDFResumenLiquidacion);
     $("pdfIsrBtn").addEventListener("click", savePDFResumenISR);
+
     $("saveSheetsBtn").addEventListener("click", guardarEnGoogleSheets);
 
-    // Inputs
+    // Overlay buttons (ambos llaman a guardar)
+    $("lockSaveBtn").addEventListener("click", guardarEnGoogleSheets);
+    $("lockSaveBtnISR").addEventListener("click", guardarEnGoogleSheets);
+
+    // Mobile footer
+    $("mfSaveBtn").addEventListener("click", guardarEnGoogleSheets);
+    $("mfPDFBtn").addEventListener("click", savePDFResumenLiquidacion);
+
+    $("mfTabLiq").addEventListener("click", ()=>{
+      document.querySelector('.tabbtn[data-tab="liqTab"]').click();
+    });
+
+    $("mfTabISR").addEventListener("click", async ()=>{
+      if(!isUnlocked){
+        alert("Primero debes Guardar datos para acceder a ISR.");
+        return;
+      }
+      document.querySelector('.tabbtn[data-tab="isrTab"]').click();
+    });
+
+    // Inputs (siguen recalculando internamente, pero UI seguirá bloqueado hasta guardar)
     ["correo","nombre","ingreso","baja","vacGozadas","hePend","otrosDesc"].forEach(id=>{
       $(id).addEventListener("input", ()=>{ renderAll(); });
       $(id).addEventListener("change", ()=>{
@@ -1464,12 +1691,18 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
     // Tabs
     document.querySelectorAll(".tabbtn").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
+      btn.addEventListener("click", (ev)=>{
+        const id = btn.getAttribute("data-tab");
+        if(id === "isrTab" && !isUnlocked){
+          ev.preventDefault();
+          alert("Primero debes Guardar datos para acceder a ISR.");
+          return;
+        }
+
         document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("active"));
         document.querySelectorAll(".tabpanel").forEach(p=>p.classList.remove("active"));
 
         btn.classList.add("active");
-        const id = btn.getAttribute("data-tab");
         document.getElementById(id).classList.add("active");
 
         if(id === "isrTab") renderISR();
