@@ -820,6 +820,13 @@
       const w = $("welcomeMsg");
       if(w) w.style.display="none";
     }
+    // ✅ NUEVO: cierra el mensaje del lock overlay (el "Primero guarda los datos")
+  function hideLockMessage(){
+  const liq = $("lockAreaLiq");
+  if(!liq) return;
+  const overlay = liq.querySelector(".lockOverlay");
+  if(overlay) overlay.style.display = "none";
+  }
 
     // ========= Error handler =========
     window.onerror = function(message, source, lineno, colno, error) {
@@ -1869,7 +1876,7 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
     $("lockSaveBtn").addEventListener("click", guardarEnGoogleSheets);
 
     // Lock overlay helpers
-    $("lockCloseWelcomeBtn").addEventListener("click", hideWelcome);
+    $("lockCloseWelcomeBtn").addEventListener("click", hideLockMessage);
     $("isrGoSaveBtn").addEventListener("click", ()=>{
       // ir a tab liquidación
       document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("active"));
