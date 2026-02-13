@@ -363,7 +363,7 @@
 
   </div><!-- /app -->
 
-  <!-- Librerías opcionales (para exportar Excel/PDF). Si el usuario está offline o bloquea CDN, fallarán y mostramos error. -->
+  <!-- Librerías opcionales -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
@@ -1342,28 +1342,18 @@ Indemnización = ${fmt(r2(r.indemBase))} * (${r.diasServicio} / 365) * ${r2(r.in
 
       try {
         const res = await fetch(SHEETS_URL, {
-  method: "POST",
-  headers: { "Content-Type": "text/plain;charset=utf-8" },
-  body: JSON.stringify(payload)
-});
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
 
-const text = await res.text();
-let out = null;
-try { out = JSON.parse(text); } catch(e) {}
-
-if(!res.ok || !out || !out.ok){
-  console.log("HTTP:", res.status, "Respuesta:", text);
-  alert("No se pudo guardar. El servidor rechazó la solicitud.");
-  return;
-}
-
-alert("Datos guardados ✅");
-
-        const out = await res.json().catch(() => null);
+        const text = await res.text();
+        let out = null;
+        try { out = JSON.parse(text); } catch(e) {}
 
         if(!res.ok || !out || !out.ok){
-          console.log("Respuesta servidor:", out);
-          alert("No se pudo guardar. Captcha/seguridad o servidor rechazó la solicitud.");
+          console.log("HTTP:", res.status, "Respuesta:", text);
+          alert("No se pudo guardar. El servidor rechazó la solicitud.");
           return;
         }
 
